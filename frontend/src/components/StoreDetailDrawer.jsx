@@ -46,7 +46,7 @@ export default function StoreDetailDrawer({
 
             <div>
 
-              <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-[#006b66] dark:text-blue-300">
+              <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-[#2563EB] dark:text-blue-300">
                 Store Details
               </div>
 
@@ -96,6 +96,11 @@ export default function StoreDetailDrawer({
             />
 
             <Info
+              label="Contact"
+              value={store.contact || "Not available"}
+            />
+
+            <Info
               label="Outstanding"
               value={`₹${store.outstanding.toLocaleString(
                 "en-IN"
@@ -103,13 +108,20 @@ export default function StoreDetailDrawer({
             />
 
             <Info
-              label="Overdue"
+              label="Outstanding Age"
               value={`${store.overdue} days`}
             />
 
             <Info
+              label="Last Visited"
+              value={store.lastVisited || "Not available"}
+            />
+
+            <Info
               label="Last Payment"
-              value={store.lastPayment}
+              value={`₹${store.lastPayment.toLocaleString(
+                "en-IN"
+              )}`}
             />
 
           </div>
@@ -167,7 +179,7 @@ export default function StoreDetailDrawer({
                     className="text-sm text-slate-600 dark:text-slate-300 flex gap-2"
                   >
 
-                    <span className="text-[#006b66]">
+                    <span className="text-[#2563EB]">
                       •
                     </span>
 

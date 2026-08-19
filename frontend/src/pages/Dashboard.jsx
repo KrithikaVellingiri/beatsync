@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   AlertTriangle,
   Banknote,
@@ -8,7 +9,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import { deliveryBoys } from "../data/mockData";
+import { deliveryBoys, previousDayPending } from "../data/mockData";
 import { useBeatSyncStore } from "../store/useBeatSyncStore";
 
 import CollectionChart from "../components/CollectionChart";
@@ -34,8 +35,20 @@ export default function Dashboard() {
   const statusColor = (status) => {
     if (status === "Completed") return "text-emerald-600";
     if (status === "Delayed") return "text-red-600";
-    return "text-[#006b66]";
+    return "text-[#2563EB]";
   };
+
+  const isInactive = (lastActive) => {
+  if (!lastActive) return false;
+
+  const now = new Date("2026-08-19T10:30:00");
+  const last = new Date(lastActive);
+
+  const differenceInMinutes =
+    (now - last) / (1000 * 60);
+
+  return differenceInMinutes >= 90;
+};
 
   return (
     <div className="space-y-5">
@@ -45,7 +58,7 @@ export default function Dashboard() {
 
         <div>
 
-          <div className="text-xs font-bold uppercase tracking-[0.14em] text-[#006b66] dark:text-blue-300">
+          <div className="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB] dark:text-blue-300">
             Operations control room
           </div>
 
@@ -61,7 +74,7 @@ export default function Dashboard() {
         </div>
 
 
-        <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-[#006b66] bg-blue-50 dark:bg-blue-950/30 dark:text-blue-300 px-3 py-2 rounded-full">
+        <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-[#2563EB] bg-blue-50 dark:bg-blue-950/30 dark:text-blue-300 px-3 py-2 rounded-full">
 
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
 
@@ -71,6 +84,134 @@ export default function Dashboard() {
 
       </div>
 
+            {/* PREVIOUS DAY PENDING */}
+      <section className="glass rounded-[22px] overflow-hidden">
+
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+
+          <div>
+            <h2 className="font-bold">
+              Previous Day — Pending Items
+            </h2>
+
+            <p className="text-xs text-slate-500 mt-1">
+              Unresolved stores from yesterday that need attention today.
+            </p>
+          </div>
+
+          <span className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-950/30 px-3 py-1.5 rounded-full">
+            {previousDayPending.length} pending
+          </span>
+
+        </div>
+
+
+        <div className="overflow-x-auto">
+
+          <table className="w-full text-xs">
+
+            <thead className="bg-slate-50/80 dark:bg-slate-900/50 text-[10px] uppercase tracking-wide text-slate-500">
+
+              <tr>
+
+                <th className="text-left px-4 py-3">
+                  Store
+                </th>
+
+                <th className="text-left px-4 py-3">
+                  Locality
+                </th>
+
+                <th className="text-right px-4 py-3">
+                  Outstanding
+                </th>
+
+                <th className="text-right px-4 py-3">
+                  Age
+                </th>
+
+                <th className="text-center px-4 py-3">
+                  Status
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody>
+
+              {previousDayPending.map((item) => (
+
+                <tr
+                  key={item.id}
+                  className="border-t border-slate-100 dark:border-slate-800"
+                >
+
+                  {/* STORE */}
+                  <td className="px-4 py-4">
+
+                    <div className="font-bold">
+                      {item.storeName}
+                    </div>
+
+                    <div className="text-[10px] text-slate-400 mt-1">
+                      {item.storeId}
+                    </div>
+
+                  </td>
+
+
+                  {/* LOCALITY */}
+                  <td className="px-4 py-4 text-slate-500">
+                    {item.locality}
+                  </td>
+
+
+                  {/* OUTSTANDING */}
+                  <td className="px-4 py-4 text-right font-bold">
+
+                    ₹{item.outstanding.toLocaleString("en-IN")}
+
+                  </td>
+
+
+                  {/* AGE */}
+                  <td className="px-4 py-4 text-right">
+
+                    <span
+                      className={
+                        item.age >= 30
+                          ? "font-bold text-red-600"
+                          : "font-semibold text-amber-600"
+                      }
+                    >
+                      {item.age} days
+                    </span>
+
+                  </td>
+
+
+                  {/* STATUS */}
+                  <td className="px-4 py-4 text-center">
+
+                    <StatusBadge
+                      status={item.status}
+                    />
+
+                  </td>
+
+                </tr>
+
+              ))}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
 
       {/* METRICS */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
@@ -157,6 +298,9 @@ export default function Dashboard() {
                   <th className="text-left px-4 py-3">
                     Status
                   </th>
+                  <th className="px-4 py-3 text-left">
+                     Activity
+                  </th>
 
                   <th></th>
 
@@ -192,7 +336,7 @@ export default function Dashboard() {
                             className={`w-8 h-8 rounded-full grid place-items-center font-bold text-xs ${
                               boy.status === "Delayed"
                                 ? "bg-red-100 text-red-600"
-                                : "bg-blue-100 text-[#006b66]"
+                                : "bg-blue-100 text-[#2563EB]"
                             }`}
                           >
                             {boy.initials}
@@ -226,7 +370,7 @@ export default function Dashboard() {
                               className={`h-full rounded-full ${
                                 boy.status === "Delayed"
                                   ? "bg-red-500"
-                                  : "bg-[#006b66]"
+                                  : "bg-[#2563EB]"
                               }`}
                               style={{
                                 width: `${percentage}%`,
@@ -281,22 +425,39 @@ export default function Dashboard() {
 
                       {/* STATUS */}
                       <td className="px-4 py-4">
-
-                        <StatusBadge
-                          status={boy.status}
-                        />
-
+                        <StatusBadge status={boy.status} />
                       </td>
 
 
-                      <td className="px-4 py-4">
+                        {/* ACTIVITY / INACTIVITY */}
+                        <td className="px-4 py-4">
+                          {isInactive(boy.lastActive) ? (
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
 
-                        <ChevronRight
-                          size={16}
-                          className="text-[#006b66]"
-                        />
+                              <span className="text-xs font-semibold text-yellow-700 dark:text-yellow-300">
+                                Inactive
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500" />
 
-                      </td>
+                              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                Active
+                              </span>
+                            </div>
+                          )}
+                        </td>
+
+
+                        {/* ARROW */}
+                        <td className="px-4 py-4">
+                          <ChevronRight
+                            size={16}
+                            className="text-[#2563EB]"
+                          />
+                        </td>
 
                     </tr>
 
@@ -485,7 +646,7 @@ function Metric({
           className={`${
             danger
               ? "text-red-500"
-              : "text-[#006b66]"
+              : "text-[#2563EB]"
           }`}
         >
           {icon}
@@ -593,7 +754,7 @@ function ReconciliationMetric({
           danger
             ? "text-red-600"
             : positive
-            ? "text-[#006b66]"
+            ? "text-[#2563EB]"
             : "text-slate-500"
         }`}
       >

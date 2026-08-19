@@ -176,7 +176,7 @@ export default function BeatGenerator() {
 
         <button
           onClick={generate}
-          className="pill inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#006b66] hover:bg-[#005b57] text-white font-semibold shadow-lg shadow-blue-900/10 transition"
+          className="pill inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#2563EB] hover:bg-[#005b57] text-white font-semibold shadow-lg shadow-blue-900/10 transition"
         >
           <Sparkles size={17} />
 
@@ -192,7 +192,7 @@ export default function BeatGenerator() {
       {!beatGenerated && (
         <div className="glass rounded-[22px] border border-slate-200 dark:border-slate-800 p-12 text-center">
 
-          <div className="w-14 h-14 mx-auto rounded-2xl bg-blue-50 text-[#006b66] dark:bg-blue-950/40 dark:text-blue-300 grid place-items-center">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-blue-50 text-[#2563EB] dark:bg-blue-950/40 dark:text-blue-300 grid place-items-center">
             <CalendarDays size={25} />
           </div>
 
@@ -247,11 +247,19 @@ export default function BeatGenerator() {
                       </th>
 
                       <th className="text-left px-3 py-2">
-                        Area
+                        Locality
                       </th>
 
                       <th className="text-right px-3 py-2">
                         Outstanding
+                      </th>
+
+                      <th className="text-center px-3 py-2">
+                        Last Visit
+                      </th>
+
+                      <th className="text-center px-3 py-2">
+                        Days
                       </th>
 
                       <th className="text-center px-3 py-2">
@@ -285,6 +293,14 @@ export default function BeatGenerator() {
                           ₹{store.outstanding.toLocaleString("en-IN")}
                         </td>
 
+                        <td className="px-3 py-3 text-center text-slate-500">
+                          {store.lastVisited || "—"}
+                        </td>
+
+                        <td className="px-3 py-3 text-center font-semibold">
+                          {store.daysSinceVisit ?? "—"}
+                        </td>
+
                         <td className="px-3 py-3 text-center">
                           <StatusBadge
                             status={statusMap[store.status]}
@@ -306,7 +322,7 @@ export default function BeatGenerator() {
                                     index
                                   )
                                 }
-                                className="w-7 h-7 rounded-lg bg-blue-50 text-[#006b66] hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 text-[10px] font-bold"
+                                className="w-7 h-7 rounded-lg bg-blue-50 text-[#2563EB] hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 text-[10px] font-bold"
                               >
                                 {boy.initials}
                               </button>
@@ -371,7 +387,7 @@ export default function BeatGenerator() {
                 >
 
                   {/* BOY HEADER */}
-                  <div className="px-4 py-3 bg-[#006b66] text-white">
+                  <div className="px-4 py-3 bg-[#2563EB] text-white">
 
                     <div className="flex items-center gap-3">
 
@@ -432,27 +448,35 @@ export default function BeatGenerator() {
                                 {store.name}
                               </div>
 
-                              <div className="text-[10px] text-slate-500 mt-1">
-                                {store.locality}
+                                                          <div className="text-[10px] text-slate-500 mt-1">
+                              {store.locality}
+                            </div>
+
+                            <div className="mt-2">
+
+                              <div className="text-xs font-bold">
+                                ₹{store.outstanding.toLocaleString("en-IN")}
                               </div>
 
-                              <div className="flex items-center justify-between mt-2">
+                              <div className="flex items-center justify-between mt-1">
 
-                                <span className="text-xs font-bold">
-                                  ₹{store.outstanding.toLocaleString(
-                                    "en-IN"
-                                  )}
-                                </span>
+                                <div className="text-[10px] text-slate-500">
+                                  Last visit: {store.lastVisited || "—"}
+                                </div>
 
                                 <StatusBadge
-                                  status={
-                                    statusMap[
-                                      store.status
-                                    ]
-                                  }
+                                  status={statusMap[store.status]}
                                 />
 
                               </div>
+
+                              {store.daysSinceVisit !== undefined && (
+                                <div className="text-[10px] text-slate-500 mt-1">
+                                  {store.daysSinceVisit} days since last visit
+                                </div>
+                              )}
+
+                            </div>
 
                             </div>
 
@@ -593,7 +617,7 @@ export default function BeatGenerator() {
                   className={`pill min-w-[230px] py-3 flex items-center justify-center gap-2 font-semibold transition ${
                     unassigned.length > 0
                       ? "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-800"
-                      : "bg-[#006b66] hover:bg-[#005b57] text-white"
+                      : "bg-[#2563EB] hover:bg-[#005b57] text-white"
                   }`}
                 >
                   <Send size={16} />
@@ -606,7 +630,7 @@ export default function BeatGenerator() {
                   onClick={() =>
                     navigate("/dashboard")
                   }
-                  className="pill min-w-[230px] py-3 bg-[#006b66] text-white font-semibold"
+                  className="pill min-w-[230px] py-3 bg-[#2563EB] text-white font-semibold"
                 >
                   Go to Live Dashboard
                 </button>

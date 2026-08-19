@@ -1,8 +1,12 @@
 import {
+  Banknote,
   ChevronRight,
   Filter,
   Search,
   X,
+  AlertTriangle,
+  CheckCircle2,
+
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -101,6 +105,11 @@ export default function Ledger() {
         boy.id === selectedBoy
     )?.name;
 
+  const selectedBoyData =
+  deliveryBoys.find(
+    (boy) => boy.id === selectedBoy
+  );
+
 
   return (
     <div className="space-y-5">
@@ -110,7 +119,7 @@ export default function Ledger() {
 
         <div>
 
-          <div className="text-xs font-bold uppercase tracking-[0.14em] text-[#006b66] dark:text-blue-300">
+          <div className="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB] dark:text-blue-300">
             Store-level operations
           </div>
 
@@ -127,6 +136,88 @@ export default function Ledger() {
 
       </div>
 
+    {/* BOY RECONCILIATION */}
+{selectedBoy !== "all" && selectedBoyData && (
+  <section className="glass rounded-[22px] overflow-hidden mb-5">
+
+    <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+
+      <div>
+        <div className="text-xs font-bold uppercase tracking-wide text-[#2563EB]">
+          Today's reconciliation
+        </div>
+
+        <h2 className="text-xl font-extrabold mt-1">
+          {selectedBoyData.name}
+        </h2>
+
+        <p className="text-xs text-slate-500 mt-1">
+          Cash, returns, outstanding and discrepancy for today's beat.
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2">
+
+        {selectedBoyData.dayClosed ? (
+          <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold">
+            <CheckCircle2 size={14} />
+            Day Closed
+          </span>
+        ) : (
+          <button
+            className="px-4 py-2.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold transition"
+          >
+            Close Day
+          </button>
+        )}
+
+      </div>
+
+    </div>
+
+
+    {/* RECONCILIATION METRICS */}
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+
+      <Recon
+        label="EXPECTED CASH"
+        value={selectedBoyData.expectedCash}
+      />
+
+      <Recon
+        label="SUBMITTED CASH"
+        value={selectedBoyData.submittedCash}
+      />
+
+      <Recon
+        label="DIFFERENCE"
+        value={selectedBoyData.expectedCash - selectedBoyData.submittedCash}
+        danger={
+          selectedBoyData.expectedCash !==
+          selectedBoyData.submittedCash
+        }
+      />
+
+      <Recon
+        label="RETURNS"
+        value={selectedBoyData.returns}
+      />
+
+      <Recon
+        label="OUTSTANDING"
+        value={selectedBoyData.outstanding}
+      />
+
+      <Recon
+        label="DISCREPANCY"
+        value={selectedBoyData.discrepancy}
+        danger={selectedBoyData.discrepancy > 0}
+      />
+
+    </div>
+
+  </section>
+)}
 
       {/* FILTER BAR */}
       <section className="glass rounded-[20px] p-3">
@@ -258,7 +349,7 @@ export default function Ledger() {
               Showing stores for
             </span>
 
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-[#006b66] dark:bg-blue-950/40 dark:text-blue-300 text-[10px] font-bold">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-[#2563EB] dark:bg-blue-950/40 dark:text-blue-300 text-[10px] font-bold">
 
               {selectedBoyName}
 
@@ -362,7 +453,7 @@ export default function Ledger() {
 
                         <div className="flex items-center gap-2">
 
-                          <div className="w-7 h-7 rounded-full bg-blue-100 text-[#006b66] dark:bg-blue-950 dark:text-blue-300 grid place-items-center text-[9px] font-bold">
+                          <div className="w-7 h-7 rounded-full bg-blue-100 text-[#2563EB] dark:bg-blue-950 dark:text-blue-300 grid place-items-center text-[9px] font-bold">
                             {boy?.initials}
                           </div>
 
@@ -404,7 +495,7 @@ export default function Ledger() {
 
                         <ChevronRight
                           size={15}
-                          className="text-[#006b66]"
+                          className="text-[#2563EB]"
                         />
 
                       </td>
@@ -467,7 +558,7 @@ export default function Ledger() {
       {/* INFO */}
       <section className="glass rounded-[20px] p-4 flex items-start gap-3">
 
-        <div className="w-8 h-8 rounded-full border border-blue-200 text-[#006b66] grid place-items-center shrink-0 dark:border-blue-900 dark:text-blue-300">
+        <div className="w-8 h-8 rounded-full border border-blue-200 text-[#2563EB] grid place-items-center shrink-0 dark:border-blue-900 dark:text-blue-300">
           i
         </div>
 
@@ -529,6 +620,47 @@ function Total({
       >
         {value}
       </div>
+
+    </div>
+  );
+
+  
+}
+
+function Recon({
+  label,
+  value,
+  danger,
+}) {
+  return (
+    <div className="p-4 border-r border-b border-slate-100 dark:border-slate-800">
+
+      <div
+        className={`text-[9px] font-bold tracking-wide ${
+          danger
+            ? "text-red-600"
+            : "text-slate-500"
+        }`}
+      >
+        {label}
+      </div>
+
+      <div
+        className={`text-lg font-extrabold mt-2 ${
+          danger
+            ? "text-red-600"
+            : ""
+        }`}
+      >
+        ₹{value.toLocaleString("en-IN")}
+      </div>
+
+      {danger && (
+        <div className="flex items-center gap-1 mt-1 text-[10px] text-red-600 font-semibold">
+          <AlertTriangle size={11} />
+          Attention required
+        </div>
+      )}
 
     </div>
   );
