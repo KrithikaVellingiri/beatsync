@@ -1,33 +1,48 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+// app/(tabs)/_layout.tsx
+import { Tabs } from "expo-router";
+import { Text } from "react-native";
+import { useLanguage } from "../../context/LanguageContext";
+import { useTheme } from "../../context/ThemeContext";
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function TabsLayout() {
+  const { colors } = useTheme();
+  const { t } = useLanguage();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
+      }}
+    >
       <Tabs.Screen
-        name="index"
+        name="beat"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: t("beat"),
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🗒️</Text>,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="stores"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: t("stores"),
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏬</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="day"
+        options={{
+          title: t("day"),
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>✅</Text>,
         }}
       />
     </Tabs>
