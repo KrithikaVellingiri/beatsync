@@ -1,0 +1,250 @@
+const bcrypt = require("bcrypt");
+
+const prisma = require("../lib/prisma");
+const { signToken } = require("../utils/jwt");
+const { sanitizeUser } = require("../utils/sanitize");
+
+const SALT_ROUNDS = 10;
+
+// POST /api/auth/register-owner
+async function registerOwner(req, res, next) {
+  try {
+    const {
+      distributorName,
+      ownerName,
+      phone,
+      email,
+      password,
+    } = req.body;
+
+    if (!distributorName || !ownerName || !phone || !password) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "distributorName, ownerName, phone and password are required",
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters",
+      });
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { phone },
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "A user with this phone number already exists",
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+    const result = await prisma.$transaction(async (tx) => {
+      const distributor = await tx.distributor.create({
+        data: {
+          name: distributorName,
+          phone,
+          email: email || null,
+        },
+      });
+
+      const user = await tx.user.create({
+        data: {
+          distributorId: distributor.id,
+          name: ownerName,
+          phone,
+          email: email || null,
+          passwordHash,
+          role: "owner",
+        },
+      });
+
+      return {
+        distributor,
+        user,
+      };
+    });
+
+    const token = signToken({
+      userId: result.user.id,
+      distributorId: result.distributor.id,
+      role: result.user.role,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Owner and distributor account created",
+      data: {
+        token,
+        user: sanitizeUser(result.user),
+        distributor: result.distributor,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+
+// POST /api/auth/register-delivery-boy
+async function registerDeliveryBoy(req, res, next) {
+  try {
+    const {
+      name,
+      phone,
+      email,
+      password,
+    } = req.body;
+
+    if (!name || !phone || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "name, phone and password are required",
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters",
+      });
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { phone },
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "A user with this phone number already exists",
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+    const user = await prisma.user.create({
+      data: {
+        distributorId: req.user.distributorId,
+        name,
+        phone,
+        email: email || null,
+        passwordHash,
+        role: "delivery_boy",
+      },
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Delivery boy account created",
+      data: {
+        user: sanitizeUser(user),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+
+// POST /api/auth/login
+async function login(req, res, next) {
+  try {
+    const {
+      phone,
+      password,
+    } = req.body;
+
+    if (!phone || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "phone and password are required",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { phone },
+    });
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid phone number or password",
+      });
+    }
+
+    const passwordValid = await bcrypt.compare(
+      password,
+      user.passwordHash
+    );
+
+    if (!passwordValid) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid phone number or password",
+      });
+    }
+
+    const token = signToken({
+      userId: user.id,
+      distributorId: user.distributorId,
+      role: user.role,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      data: {
+        token,
+        user: sanitizeUser(user),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+
+// GET /api/auth/me
+async function me(req, res, next) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: req.user.id,
+      },
+      include: {
+        distributor: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        user: sanitizeUser(user),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+
+module.exports = {
+  registerOwner,
+  registerDeliveryBoy,
+  login,
+  me,
+};

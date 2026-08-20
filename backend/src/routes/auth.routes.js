@@ -1,0 +1,34 @@
+const express = require("express");
+
+const {
+  registerOwner,
+  registerDeliveryBoy,
+  login,
+  me,
+} = require("../controllers/auth.controller");
+
+const {
+  authenticate,
+  authorize,
+} = require("../middleware/auth.middleware");
+
+const router = express.Router();
+
+router.post("/register-owner", registerOwner);
+
+router.post(
+  "/register-delivery-boy",
+  authenticate,
+  authorize("owner"),
+  registerDeliveryBoy
+);
+
+router.post("/login", login);
+
+router.get(
+  "/me",
+  authenticate,
+  me
+);
+
+module.exports = router;
