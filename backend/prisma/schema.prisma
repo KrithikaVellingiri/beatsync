@@ -45,15 +45,6 @@ enum CreditPromiseStatus {
   fulfilled
   overdue
 }
-enum OrderStatus {
-  pending
-  assigned
-  out_for_delivery
-  delivered
-  partially_delivered
-  cancelled
-}
-
 
 model Distributor {
   id        Int      @id @default(autoincrement())
@@ -114,8 +105,7 @@ model Store {
   distributor      Distributor           @relation(fields: [distributorId], references: [id], onDelete: Cascade)
   assignmentStores BeatAssignmentStore[]
   visits           StoreVisit[]
-  storeOwner       StoreOwner?
-  orders Order[]
+  ledgerEntries    StoreLedgerEntry[]
 
   @@index([distributorId])
   @@index([isActive])
@@ -133,11 +123,9 @@ model SKU {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  distributor          Distributor           @relation(fields: [distributorId], references: [id], onDelete: Cascade)
-  plannedDeliveryItems PlannedDeliveryItem[]
-  deliveryItems        DeliveryItem[]
-  returnItems          ReturnItem[]
-  orderItems           OrderItem[]
+  distributor   Distributor    @relation(fields: [distributorId], references: [id], onDelete: Cascade)
+  deliveryItems DeliveryItem[]
+  returnItems   ReturnItem[]
 
   @@index([distributorId])
   @@index([isActive])
@@ -195,101 +183,13 @@ model BeatAssignmentStore {
   beatAssignment BeatAssignment @relation(fields: [beatAssignmentId], references: [id], onDelete: Cascade)
   store          Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
-  plannedDeliveryItems PlannedDeliveryItem[]
-  visit                StoreVisit?
+  visit StoreVisit?
 
   @@unique([beatAssignmentId, storeId])
   @@index([beatAssignmentId])
   @@index([storeId])
   @@index([visitOrder])
 }
-
-model PlannedDeliveryItem {
-  id                    Int @id @default(autoincrement())
-  beatAssignmentStoreId Int
-  skuId                 Int
-
-  plannedQuantity Int
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  beatAssignmentStore BeatAssignmentStore @relation(fields: [beatAssignmentStoreId], references: [id], onDelete: Cascade)
-  sku                 SKU                 @relation(fields: [skuId], references: [id], onDelete: Cascade)
-  deliveryItems       DeliveryItem[]
-
-  @@unique([beatAssignmentStoreId, skuId])
-  @@index([beatAssignmentStoreId])
-  @@index([skuId])
-}
-model StoreOwner {
-  id        Int      @id @default(autoincrement())
-  storeId   Int      @unique
-  name      String
-  phone     String   @unique
-  email     String?
-  passwordHash String
-  isActive  Boolean  @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  store Store @relation(fields: [storeId],references: [id],onDelete: Cascade)
-
-  orders Order[]
-
-  @@map("store_owners")
-}
-model Order {
-  id           Int         @id @default(autoincrement())
-  storeId      Int
-  storeOwnerId Int
-
-  status       OrderStatus @default(pending)
-
-  totalAmount  Decimal     @default(0) @db.Decimal(10, 2)
-
-  orderedAt    DateTime    @default(now())
-  assignedAt   DateTime?
-  deliveredAt  DateTime?
-
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-
-  store Store @relation(fields: [storeId],references: [id],onDelete: Cascade)
-
-  storeOwner StoreOwner @relation(fields: [storeOwnerId],references: [id],onDelete: Cascade)
-
-  items OrderItem[]
-
-  @@index([storeId])
-  @@index([storeOwnerId])
-  @@index([status])
-  @@index([orderedAt])
-  @@map("orders")
-}
-model OrderItem {
-  id        Int @id @default(autoincrement())
-
-  orderId   Int
-  skuId     Int
-
-  quantity  Int
-  unitPrice Decimal @db.Decimal(10, 2)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  order Order @relation(fields: [orderId],references: [id],onDelete: Cascade)
-
-  sku SKU @relation(fields: [skuId],references: [id],onDelete: Cascade)
-
-  @@unique([orderId, skuId])
-  @@index([orderId])
-  @@index([skuId])
-  @@map("order_items")
-}
-
 
 model StoreVisit {
   id                    Int @id @default(autoincrement())
@@ -315,6 +215,7 @@ model StoreVisit {
   returnItems   ReturnItem[]
   payments      Payment[]
   creditPromise CreditPromise?
+  ledgerEntry   StoreLedgerEntry?
 
   @@unique([beatAssignmentStoreId])
   @@index([storeId])
@@ -325,9 +226,8 @@ model StoreVisit {
 model DeliveryItem {
   id Int @id @default(autoincrement())
 
-  storeVisitId          Int
-  skuId                 Int
-  plannedDeliveryItemId Int?
+  storeVisitId Int
+  skuId        Int
 
   quantity Int
 
@@ -338,11 +238,8 @@ model DeliveryItem {
 
   sku SKU @relation(fields: [skuId], references: [id], onDelete: Cascade)
 
-  plannedDeliveryItem PlannedDeliveryItem? @relation(fields: [plannedDeliveryItemId], references: [id], onDelete: SetNull)
-
   @@index([storeVisitId])
   @@index([skuId])
-  @@index([plannedDeliveryItemId])
 }
 
 model ReturnItem {
@@ -399,4 +296,30 @@ model CreditPromise {
   updatedAt DateTime @updatedAt
 
   storeVisit StoreVisit @relation(fields: [storeVisitId], references: [id], onDelete: Cascade)
+}
+
+model StoreLedgerEntry {
+  id Int @id @default(autoincrement())
+
+  storeId      Int
+  storeVisitId Int? @unique
+
+  previousBalance Decimal @db.Decimal(10, 2)
+
+  salesAmount   Decimal @default(0) @db.Decimal(10, 2)
+  returnAmount  Decimal @default(0) @db.Decimal(10, 2)
+  paymentAmount Decimal @default(0) @db.Decimal(10, 2)
+  creditAmount  Decimal @default(0) @db.Decimal(10, 2)
+
+  newBalance Decimal @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+
+  store      Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  storeVisit StoreVisit? @relation(fields: [storeVisitId], references: [id], onDelete: SetNull)
+
+  @@index([storeId])
+  @@index([storeVisitId])
+  @@index([createdAt])
+  @@map("store_ledger_entries")
 }

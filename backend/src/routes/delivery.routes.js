@@ -6,9 +6,12 @@ const {
   startVisit,
   completeVisit,
   addDeliveryItems,
+  updateDeliveryItem,
+  removeDeliveryItem,
   addPayment,
   addReturn,
   addCreditPromise,
+  getOwnerContact,
 } = require("../controllers/delivery.controller");
 
 const {
@@ -20,60 +23,110 @@ const router = express.Router();
 
 router.use(authenticate);
 
-// Delivery boy's published beat
+// ---------------------------------------------------------
+// DELIVERY BOY'S BEAT
+// ---------------------------------------------------------
+
 router.get(
   "/my-beat",
   authorize("delivery_boy"),
   getMyBeat
 );
 
-// Open a specific assigned store
+// ---------------------------------------------------------
+// STORE
+// ---------------------------------------------------------
+
 router.get(
   "/stores/:assignmentStoreId",
   authorize("delivery_boy"),
   getVisitDetails
 );
 
-// Start visit
+// ---------------------------------------------------------
+// START VISIT
+// ---------------------------------------------------------
+
 router.post(
   "/visits/:assignmentStoreId/start",
   authorize("delivery_boy"),
   startVisit
 );
 
-// Record delivered products
+// ---------------------------------------------------------
+// PRODUCTS
+// ---------------------------------------------------------
+
+router.get(
+  "/visits/:visitId/products",
+  authorize("delivery_boy"),
+  getProducts
+);
+
+// ---------------------------------------------------------
+// ACTUAL DELIVERY
+// ---------------------------------------------------------
+
 router.post(
   "/visits/:visitId/items",
   authorize("delivery_boy"),
   addDeliveryItems
 );
 
-// Record payment
+// ---------------------------------------------------------
+// PAYMENT
+// ---------------------------------------------------------
+
 router.post(
   "/visits/:visitId/payment",
   authorize("delivery_boy"),
   addPayment
 );
 
-// Record return
+// ---------------------------------------------------------
+// RETURNS
+// ---------------------------------------------------------
+
 router.post(
   "/visits/:visitId/returns",
   authorize("delivery_boy"),
   addReturn
 );
 
-// Record credit promise
+// ---------------------------------------------------------
+// CREDIT PROMISE
+// ---------------------------------------------------------
+
 router.post(
   "/visits/:visitId/credit",
   authorize("delivery_boy"),
   addCreditPromise
 );
 
-// Complete visit
+// ---------------------------------------------------------
+// COMPLETE VISIT
+// ---------------------------------------------------------
+
 router.post(
   "/visits/:visitId/complete",
   authorize("delivery_boy"),
   completeVisit
+);
+router.put(
+  "/visits/:visitId/items/:skuId",
+  authorize("delivery_boy"),
+  updateDeliveryItem
+);
+
+router.delete(
+  "/visits/:visitId/items/:skuId",
+  authorize("delivery_boy"),
+  removeDeliveryItem
+);
+router.get(
+  "/owner-contact",
+  authorize("delivery_boy"),
+  getOwnerContact
 );
 
 module.exports = router;

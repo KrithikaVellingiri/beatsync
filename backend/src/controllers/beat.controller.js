@@ -81,7 +81,7 @@ function chooseDeliveryBoy(deliveryBoys, workload, locality) {
       (current.localities[locality] || 0) > 0;
 
     // Strongly prefer boys who already serve the locality,
-    // while still balancing the total store count.
+    // while still balancing total store count.
     const localityPenalty = localityAlreadyUsed ? 0 : 0.5;
 
     const score = count + localityPenalty;
@@ -94,6 +94,10 @@ function chooseDeliveryBoy(deliveryBoys, workload, locality) {
 
   return bestBoy;
 }
+
+// ---------------------------------------------------------
+// GENERATE BEAT
+// ---------------------------------------------------------
 
 async function generateBeat(req, res, next) {
   try {
@@ -216,7 +220,7 @@ async function generateBeat(req, res, next) {
       });
     }
 
-    // Create the Beat + assignments in one transaction.
+    // Create Beat + assignments in one transaction.
     const beat = await prisma.$transaction(async (tx) => {
       const newBeat = await tx.beat.create({
         data: {
@@ -240,8 +244,8 @@ async function generateBeat(req, res, next) {
       for (const boy of deliveryBoys) {
         const boyStores = byBoy[boy.id] || [];
 
-        // Keep high-priority stores earlier,
-        // then locality for grouping.
+        // Keep stores grouped by locality,
+        // then prioritize higher score.
         boyStores.sort((a, b) => {
           if (a.locality !== b.locality) {
             return a.locality.localeCompare(b.locality);
@@ -250,12 +254,13 @@ async function generateBeat(req, res, next) {
           return b.score - a.score;
         });
 
-        const beatAssignment = await tx.beatAssignment.create({
-          data: {
-            beatId: newBeat.id,
-            deliveryBoyId: boy.id,
-          },
-        });
+        const beatAssignment =
+          await tx.beatAssignment.create({
+            data: {
+              beatId: newBeat.id,
+              deliveryBoyId: boy.id,
+            },
+          });
 
         for (let i = 0; i < boyStores.length; i++) {
           const item = boyStores[i];
@@ -265,8 +270,10 @@ async function generateBeat(req, res, next) {
               beatAssignmentId: beatAssignment.id,
               storeId: item.store.id,
               visitOrder: i + 1,
-              outstandingSnapshot: item.store.outstandingBalance,
-              overdueDaysSnapshot: item.store.overdueDays,
+              outstandingSnapshot:
+                item.store.outstandingBalance,
+              overdueDaysSnapshot:
+                item.store.overdueDays,
               riskLevel: item.riskLevel,
             },
           });
@@ -314,7 +321,9 @@ async function generateBeat(req, res, next) {
           locality: item.locality,
           score: item.score,
           daysSinceVisit: item.daysSinceVisit,
-          outstanding: Number(item.store.outstandingBalance),
+          outstanding: Number(
+            item.store.outstandingBalance
+          ),
           overdueDays: item.store.overdueDays,
           riskLevel: item.riskLevel,
         })),
@@ -324,6 +333,11 @@ async function generateBeat(req, res, next) {
     next(err);
   }
 }
+
+// ---------------------------------------------------------
+// GET COMPLETE BEAT
+// ---------------------------------------------------------
+
 async function getBeat(req, res, next) {
   try {
     const beatId = Number(req.params.id);
@@ -356,14 +370,6 @@ async function getBeat(req, res, next) {
               },
               include: {
                 store: true,
-                plannedDeliveryItems: {
-                  include: {
-                    sku: true,
-                  },
-                  orderBy: {
-                    id: "asc",
-                  },
-                },
               },
             },
           },
@@ -388,10 +394,17 @@ async function getBeat(req, res, next) {
     next(err);
   }
 }
+
+// ---------------------------------------------------------
+// REASSIGN STORE
+// ---------------------------------------------------------
+
 async function reassignStore(req, res, next) {
   try {
     const beatId = Number(req.params.beatId);
-    const assignmentStoreId = Number(req.params.assignmentStoreId);
+    const assignmentStoreId = Number(
+      req.params.assignmentStoreId
+    );
     const deliveryBoyId = Number(req.body.deliveryBoyId);
 
     if (
@@ -468,12 +481,13 @@ async function reassignStore(req, res, next) {
       });
 
     if (!targetAssignment) {
-      targetAssignment = await prisma.beatAssignment.create({
-        data: {
-          beatId,
-          deliveryBoyId,
-        },
-      });
+      targetAssignment =
+        await prisma.beatAssignment.create({
+          data: {
+            beatId,
+            deliveryBoyId,
+          },
+        });
     }
 
     await prisma.beatAssignmentStore.update({
@@ -485,35 +499,40 @@ async function reassignStore(req, res, next) {
       },
     });
 
-    // Recalculate visit order for both affected boys.
-    const affectedAssignments = await prisma.beatAssignment.findMany({
-      where: {
-        beatId,
-      },
-      include: {
-        stores: {
-          orderBy: {
-            visitOrder: "asc",
-          },
-          include: {
-            store: true,
+    // Recalculate visit order for all affected assignments.
+    const affectedAssignments =
+      await prisma.beatAssignment.findMany({
+        where: {
+          beatId,
+        },
+        include: {
+          stores: {
+            orderBy: {
+              visitOrder: "asc",
+            },
+            include: {
+              store: true,
+            },
           },
         },
-      },
-    });
+      });
 
     for (const assignment of affectedAssignments) {
-      const ordered = [...assignment.stores].sort((a, b) => {
-        const localityA = a.store.locality || "";
-        const localityB = b.store.locality || "";
+      const ordered = [...assignment.stores].sort(
+        (a, b) => {
+          const localityA = a.store.locality || "";
+          const localityB = b.store.locality || "";
 
-        if (localityA !== localityB) {
-          return localityA.localeCompare(localityB);
+          if (localityA !== localityB) {
+            return localityA.localeCompare(localityB);
+          }
+
+          return (
+            Number(b.outstandingSnapshot) -
+            Number(a.outstandingSnapshot)
+          );
         }
-
-        return Number(b.outstandingSnapshot) -
-          Number(a.outstandingSnapshot);
-      });
+      );
 
       for (let i = 0; i < ordered.length; i++) {
         await prisma.beatAssignmentStore.update({
@@ -535,129 +554,11 @@ async function reassignStore(req, res, next) {
     next(err);
   }
 }
-async function setPlannedItems(req, res, next) {
-  try {
-    const beatId = Number(req.params.beatId);
-    const assignmentStoreId = Number(
-      req.params.assignmentStoreId
-    );
 
-    const { items } = req.body;
+// ---------------------------------------------------------
+// PUBLISH BEAT
+// ---------------------------------------------------------
 
-    if (
-      !Number.isInteger(beatId) ||
-      !Number.isInteger(assignmentStoreId)
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid id",
-      });
-    }
-
-    if (!Array.isArray(items)) {
-      return res.status(400).json({
-        success: false,
-        message: "items must be an array",
-      });
-    }
-
-    const beatStore =
-      await prisma.beatAssignmentStore.findFirst({
-        where: {
-          id: assignmentStoreId,
-          beatAssignment: {
-            beatId,
-            beat: {
-              distributorId: req.user.distributorId,
-            },
-          },
-        },
-        include: {
-          beatAssignment: true,
-        },
-      });
-
-    if (!beatStore) {
-      return res.status(404).json({
-        success: false,
-        message: "Beat store assignment not found",
-      });
-    }
-
-    const beat = await prisma.beat.findFirst({
-      where: {
-        id: beatId,
-        distributorId: req.user.distributorId,
-      },
-    });
-
-    if (beat.status !== "draft") {
-      return res.status(400).json({
-        success: false,
-        message: "Products can only be planned on a draft beat",
-      });
-    }
-
-    // Validate all SKUs belong to this distributor.
-    const skuIds = items.map((item) => Number(item.skuId));
-
-    const skus = await prisma.sKU.findMany({
-      where: {
-        id: {
-          in: skuIds,
-        },
-        distributorId: req.user.distributorId,
-        isActive: true,
-      },
-    });
-
-    if (skus.length !== skuIds.length) {
-      return res.status(400).json({
-        success: false,
-        message: "One or more SKUs are invalid",
-      });
-    }
-
-    await prisma.$transaction(async (tx) => {
-      // Replace today's planned items for this store.
-      await tx.plannedDeliveryItem.deleteMany({
-        where: {
-          beatAssignmentStoreId: assignmentStoreId,
-        },
-      });
-
-      if (items.length > 0) {
-        await tx.plannedDeliveryItem.createMany({
-          data: items.map((item) => ({
-            beatAssignmentStoreId: assignmentStoreId,
-            skuId: Number(item.skuId),
-            plannedQuantity: Number(item.plannedQuantity),
-          })),
-        });
-      }
-    });
-
-    const plannedItems =
-      await prisma.plannedDeliveryItem.findMany({
-        where: {
-          beatAssignmentStoreId: assignmentStoreId,
-        },
-        include: {
-          sku: true,
-        },
-      });
-
-    return res.status(200).json({
-      success: true,
-      message: "Planned delivery items saved",
-      data: {
-        items: plannedItems,
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
-}
 async function publishBeat(req, res, next) {
   try {
     const beatId = Number(req.params.id);
@@ -698,7 +599,8 @@ async function publishBeat(req, res, next) {
     }
 
     const totalStores = beat.assignments.reduce(
-      (total, assignment) => total + assignment.stores.length,
+      (total, assignment) =>
+        total + assignment.stores.length,
       0
     );
 
@@ -715,6 +617,7 @@ async function publishBeat(req, res, next) {
       },
       data: {
         status: "published",
+        publishedAt: new Date(),
       },
     });
 
@@ -729,10 +632,10 @@ async function publishBeat(req, res, next) {
     next(err);
   }
 }
+
 module.exports = {
   generateBeat,
   getBeat,
   reassignStore,
-  setPlannedItems,
   publishBeat,
 };

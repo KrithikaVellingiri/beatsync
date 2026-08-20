@@ -4,7 +4,6 @@ const {
   generateBeat,
   getBeat,
   reassignStore,
-  setPlannedItems,
   publishBeat,
 } = require("../controllers/beat.controller");
 
@@ -36,13 +35,6 @@ router.put(
   "/:beatId/stores/:assignmentStoreId/assign",
   authorize("owner"),
   reassignStore
-);
-
-// Set planned SKU quantities for a store
-router.put(
-  "/:beatId/stores/:assignmentStoreId/planned-items",
-  authorize("owner"),
-  setPlannedItems
 );
 
 // Publish beat
