@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import StoreDetailDrawer from "../components/StoreDetailDrawer";
 import {
   deliveryBoys,
   stores,
@@ -20,7 +21,7 @@ import {
 } from "../store/useBeatSyncStore";
 
 import StatusBadge from "../components/StatusBadge";
-import StoreDetailDrawer from "../components/StoreDetailDrawer";
+
 
 export default function Ledger() {
 
@@ -44,8 +45,8 @@ export default function Ledger() {
     let result = stores.filter((store) => {
 
       const matchesBoy =
-        selectedBoy === "all" ||
-        store.boyId === selectedBoy;
+  selectedBoy === "all" ||
+  store.boyId === Number(selectedBoy);
 
       const matchesSearch =
         `${store.name} ${store.locality}`
@@ -119,18 +120,18 @@ export default function Ledger() {
 
         <div>
 
-          <div className="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB] dark:text-blue-300">
+          {/* <div className="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB] dark:text-blue-300">
             Store-level operations
           </div>
 
           <h1 className="text-3xl font-extrabold tracking-tight mt-1">
             Store Ledger
-          </h1>
+          </h1> */}
 
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+          <div className="text-xs font-extrabold uppercase tracking-[0.5em] text-[#000000] dark:text-blue-300">
             View deliveries, payments, returns, credit and
             outstanding balances for every store.
-          </p>
+          </div>
 
         </div>
 
@@ -229,11 +230,13 @@ export default function Ledger() {
 
             <select
               value={selectedBoy}
-              onChange={(e) =>
-                setSelectedBoy(
-                  e.target.value
-                )
-              }
+              onChange={(e) => {
+              const value = e.target.value;
+
+              setSelectedBoy(
+                value === "all" ? "all" : Number(value)
+              );
+            }}
               className="appearance-none min-w-[155px] pl-3 pr-9 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/40 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-200"
             >
 
@@ -578,8 +581,8 @@ export default function Ledger() {
       </section>
 
 
-      {/* DRAWER */}
-      {selectedStore && (
+      {/* STORE DETAIL MODAL */}
+        {selectedStore && (
         <StoreDetailDrawer
           storeId={selectedStore}
           onClose={() =>
@@ -588,9 +591,9 @@ export default function Ledger() {
         />
       )}
 
-    </div>
-  );
-}
+            </div>
+          );
+        }
 
 
 function Total({

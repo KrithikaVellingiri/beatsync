@@ -22,6 +22,7 @@ export const deliveryBoys = [
   status: "On Track",
   lastActive: "2026-08-19T10:10:00",
   dayClosed: false,
+  initials: "R",
 },
 
  {
@@ -41,6 +42,7 @@ export const deliveryBoys = [
   status: "On Track",
   lastActive: "2026-08-19T10:00:00",
   dayClosed: false,
+  initials: "S",
 },
 
   {
@@ -60,6 +62,7 @@ export const deliveryBoys = [
   status: "Attention",
   lastActive: "2026-08-19T08:30:00",
   dayClosed: false,
+  initials: "V",
 },
   {
   id: 4,
@@ -78,6 +81,7 @@ export const deliveryBoys = [
   status: "Completed",
   lastActive: "2026-08-19T10:25:00",
   dayClosed: false,
+  initials: "A",
 },
 ];
 
@@ -310,41 +314,73 @@ export const stores = [
   },
 ];
 
-// ================================
-// PREVIOUS DAY PENDING ITEMS
-// ================================
+export const pendingItemsByDate = {
+  "2026-08-18": [
+    {
+      id: "PEN-001",
+      storeId: "STR-001",
+      storeName: "Ganesh Stores",
+      locality: "Anna Nagar",
+      outstanding: 14800,
+      age: 46,
+      status: "Critical",
+    },
 
-export const previousDayPending = [
-  {
-    id: "PEN-001",
-    storeId: "STR-001",
-    storeName: "Ganesh Stores",
-    locality: "Anna Nagar",
-    outstanding: 14800,
-    age: 46,
-    status: "Critical",
-  },
+    {
+      id: "PEN-002",
+      storeId: "STR-002",
+      storeName: "Sri Lakshmi Stores",
+      locality: "T. Nagar",
+      outstanding: 18400,
+      age: 38,
+      status: "Critical",
+    },
 
-  {
-    id: "PEN-002",
-    storeId: "STR-002",
-    storeName: "Sri Lakshmi Stores",
-    locality: "T. Nagar",
-    outstanding: 18400,
-    age: 38,
-    status: "Critical",
-  },
+    {
+      id: "PEN-003",
+      storeId: "STR-003",
+      storeName: "Kumar Stores",
+      locality: "Mogappair",
+      outstanding: 2300,
+      age: 12,
+      status: "Watch",
+    },
+  ],
 
-  {
-    id: "PEN-003",
-    storeId: "STR-003",
-    storeName: "Kumar Stores",
-    locality: "Mogappair",
-    outstanding: 2300,
-    age: 12,
-    status: "Watch",
-  },
-];
+  "2026-08-19": [
+    {
+      id: "PEN-004",
+      storeId: "STR-004",
+      storeName: "Vijay Stores",
+      locality: "Nolambur",
+      outstanding: 1200,
+      age: 8,
+      status: "Watch",
+    },
+
+    {
+      id: "PEN-005",
+      storeId: "STR-002",
+      storeName: "Sri Lakshmi Stores",
+      locality: "T. Nagar",
+      outstanding: 18400,
+      age: 39,
+      status: "Critical",
+    },
+  ],
+
+  "2026-08-20": [
+    {
+      id: "PEN-006",
+      storeId: "STR-006",
+      storeName: "Super Mart",
+      locality: "T. Nagar",
+      outstanding: 1800,
+      age: 6,
+      status: "Watch",
+    },
+  ],
+};
 
 // ================================
 // BEAT GENERATOR

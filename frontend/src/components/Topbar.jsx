@@ -1,12 +1,20 @@
+import { useState } from "react";
+
+
 import {
   Bell,
   Bot,
   Menu,
+  CalendarDays,
+  X, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
+
 import { useLocation } from "react-router-dom";
+import PendingCalendar from "./PendingCalendar";
 
 export default function Topbar({ onAsk }) {
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const location = useLocation();
 
   const title =
@@ -56,6 +64,8 @@ export default function Topbar({ onAsk }) {
           {date}
         </div>
 
+        
+        
 
         <button
           onClick={onAsk}
@@ -64,6 +74,26 @@ export default function Topbar({ onAsk }) {
           <Bot size={15} />
           Ask BeatSync AI
         </button>
+
+        <div className="relative">
+
+          <button
+            onClick={() =>
+              setCalendarOpen((value) => !value)
+            }
+            className="relative p-2 rounded-lg hover:bg-white/10"
+            title="View pending items by date"
+          >
+            <CalendarDays size={18} />
+          </button>
+
+          {calendarOpen && (
+            <PendingCalendar
+              onClose={() => setCalendarOpen(false)}
+            />
+          )}
+
+        </div>
 
 
         <button className="relative p-2 rounded-lg hover:bg-white/10">

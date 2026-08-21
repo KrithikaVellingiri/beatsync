@@ -2,21 +2,23 @@ import { useMemo } from "react";
 import {
   AlertTriangle,
   Banknote,
-  BellRing,
   CheckCircle2,
   ChevronRight,
   PackageX,
+  X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
-import { deliveryBoys, previousDayPending } from "../data/mockData";
+import { deliveryBoys} from "../data/mockData";
 import { useBeatSyncStore } from "../store/useBeatSyncStore";
 
-import CollectionChart from "../components/CollectionChart";
 import StatusBadge from "../components/StatusBadge";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+
+  const [attentionOpen, setAttentionOpen] = useState(false);
 
   const setSelectedBoy = useBeatSyncStore(
     (state) => state.setSelectedBoy
@@ -58,160 +60,126 @@ export default function Dashboard() {
 
         <div>
 
-          <div className="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB] dark:text-blue-300">
+          {/* <div className="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB] dark:text-blue-300">
             Operations control room
           </div>
 
           <h1 className="text-3xl font-extrabold tracking-tight mt-1">
             Live Operations
-          </h1>
+          </h1> */}
 
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+          <div className="text-xs font-extrabold uppercase tracking-[0.5em] text-[#000000] dark:text-black-300">
             Track today's route progress, collections and exceptions
             in real time.
-          </p>
+          </div>
 
         </div>
 
 
-        <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-[#2563EB] bg-blue-50 dark:bg-blue-950/30 dark:text-blue-300 px-3 py-2 rounded-full">
+        <div className="flex items-center gap-2">
 
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+  {/* LIVE STATUS */}
+  <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-[#2563EB] bg-blue-50 dark:bg-blue-950/30 dark:text-blue-300 px-3 py-2 rounded-full">
 
-          Live updates
+    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+
+    Live updates
+
+  </div>
+
+
+  {/* NEEDS ATTENTION TOGGLE */}
+  <div className="relative">
+
+    <button
+      onClick={() => setAttentionOpen(!attentionOpen)}
+      className={`relative p-2.5 rounded-xl border transition ${
+        attentionOpen
+          ? "bg-red-50 border-red-200 text-red-600 dark:bg-red-950/30 dark:border-red-900"
+          : "bg-white border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 dark:bg-slate-900 dark:border-slate-800"
+      }`}
+      title="Needs Attention"
+    >
+
+      <AlertTriangle size={18} />
+
+      {/* COUNT */}
+      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[9px] font-bold grid place-items-center">
+        2
+      </span>
+
+    </button>
+
+
+    {/* ATTENTION PANEL */}
+    {attentionOpen && (
+      <div className="absolute right-0 top-12 w-80 glass rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden z-50">
+
+        {/* PANEL HEADER */}
+        <div className="px-4 py-3 bg-red-50/80 dark:bg-red-950/20 border-b border-red-100 dark:border-red-900/40 flex items-center justify-between">
+
+          <div>
+
+            <div className="font-bold text-sm text-red-700 dark:text-red-300">
+              Needs Attention
+            </div>
+
+            <div className="text-[10px] text-slate-500 mt-1">
+              Items requiring immediate attention
+            </div>
+
+          </div>
+
+          <button
+            onClick={() => setAttentionOpen(false)}
+            className="p-1 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30"
+          >
+            <X size={16} />
+          </button>
 
         </div>
+
+
+        {/* ITEM 1 */}
+        <Attention
+          initials="V"
+          name="Vikram"
+          detail="Cash discrepancy"
+          value="₹1,600"
+          danger
+          onClick={() => {
+            setAttentionOpen(false);
+            setSelectedBoy(3);
+            setSelectedStore(null);
+            navigate("/ledger");
+          }}
+        />
+
+
+        {/* ITEM 2 */}
+        <Attention
+          initials="G"
+          name="Ganesh Stores"
+          detail="High outstanding"
+          value="₹14,800"
+          onClick={() => {
+            setAttentionOpen(false);
+            setSelectedBoy(1);
+            setSelectedStore("STR-001");
+            navigate("/ledger");
+          }}
+        />
+
+      </div>
+    )}
+
+  </div>
+
+</div>
 
       </div>
 
-            {/* PREVIOUS DAY PENDING */}
-      <section className="glass rounded-[22px] overflow-hidden">
-
-        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-
-          <div>
-            <h2 className="font-bold">
-              Previous Day — Pending Items
-            </h2>
-
-            <p className="text-xs text-slate-500 mt-1">
-              Unresolved stores from yesterday that need attention today.
-            </p>
-          </div>
-
-          <span className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-950/30 px-3 py-1.5 rounded-full">
-            {previousDayPending.length} pending
-          </span>
-
-        </div>
-
-
-        <div className="overflow-x-auto">
-
-          <table className="w-full text-xs">
-
-            <thead className="bg-slate-50/80 dark:bg-slate-900/50 text-[10px] uppercase tracking-wide text-slate-500">
-
-              <tr>
-
-                <th className="text-left px-4 py-3">
-                  Store
-                </th>
-
-                <th className="text-left px-4 py-3">
-                  Locality
-                </th>
-
-                <th className="text-right px-4 py-3">
-                  Outstanding
-                </th>
-
-                <th className="text-right px-4 py-3">
-                  Age
-                </th>
-
-                <th className="text-center px-4 py-3">
-                  Status
-                </th>
-
-              </tr>
-
-            </thead>
-
-
-            <tbody>
-
-              {previousDayPending.map((item) => (
-
-                <tr
-                  key={item.id}
-                  className="border-t border-slate-100 dark:border-slate-800"
-                >
-
-                  {/* STORE */}
-                  <td className="px-4 py-4">
-
-                    <div className="font-bold">
-                      {item.storeName}
-                    </div>
-
-                    <div className="text-[10px] text-slate-400 mt-1">
-                      {item.storeId}
-                    </div>
-
-                  </td>
-
-
-                  {/* LOCALITY */}
-                  <td className="px-4 py-4 text-slate-500">
-                    {item.locality}
-                  </td>
-
-
-                  {/* OUTSTANDING */}
-                  <td className="px-4 py-4 text-right font-bold">
-
-                    ₹{item.outstanding.toLocaleString("en-IN")}
-
-                  </td>
-
-
-                  {/* AGE */}
-                  <td className="px-4 py-4 text-right">
-
-                    <span
-                      className={
-                        item.age >= 30
-                          ? "font-bold text-red-600"
-                          : "font-semibold text-amber-600"
-                      }
-                    >
-                      {item.age} days
-                    </span>
-
-                  </td>
-
-
-                  {/* STATUS */}
-                  <td className="px-4 py-4 text-center">
-
-                    <StatusBadge
-                      status={item.status}
-                    />
-
-                  </td>
-
-                </tr>
-
-              ))}
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </section>
+            
 
       {/* METRICS */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
@@ -248,7 +216,7 @@ export default function Dashboard() {
 
 
       {/* MAIN OPERATION GRID */}
-      <div className="grid xl:grid-cols-[1.35fr_.65fr] gap-4">
+      <div className="space-y-4">
 
 
         {/* DELIVERY BOYS */}
@@ -339,7 +307,7 @@ export default function Dashboard() {
                                 : "bg-blue-100 text-[#2563EB]"
                             }`}
                           >
-                            {boy.initials}
+                            {boy.name.charAt(0).toUpperCase()}
                           </div>
 
                           <div>
@@ -476,146 +444,17 @@ export default function Dashboard() {
         {/* RIGHT SIDE */}
         <div className="space-y-4">
 
-          {/* NEEDS ATTENTION */}
-          <section className="glass rounded-[22px] overflow-hidden">
-
-            <div className="px-5 py-4 bg-red-50/70 dark:bg-red-950/20 border-b border-red-100 dark:border-red-900/40">
-
-              <div className="flex items-center gap-2">
-
-                <AlertTriangle
-                  size={17}
-                  className="text-red-600"
-                />
-
-                <h2 className="font-bold text-red-700 dark:text-red-300">
-                  Needs Attention
-                </h2>
-
-              </div>
-
-            </div>
 
 
-            <div className="p-3 space-y-2">
-
-              <Attention
-                initials="V"
-                name="Vikram"
-                detail="Cash discrepancy"
-                value="₹1,600"
-                danger
-                onClick={() =>
-                  openBoy("vikram")
-                }
-              />
-
-              <Attention
-                initials="G"
-                name="Ganesh Stores"
-                detail="High outstanding"
-                value="₹14,800"
-                onClick={() => {
-                  setSelectedBoy("raju");
-                  setSelectedStore("ganesh");
-                  navigate("/ledger");
-                }}
-              />
-
-            </div>
-
-          </section>
-
-
-          {/* STATUS LEGEND */}
-          <section className="glass rounded-[22px] p-4">
-
-            <div className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold mb-3">
-              Status
-            </div>
-
-            <div className="flex flex-wrap gap-4 text-xs">
-
-              <Legend
-                color="bg-emerald-500"
-                label="On Track"
-              />
-
-              <Legend
-                color="bg-amber-500"
-                label="Needs Attention"
-              />
-
-              <Legend
-                color="bg-red-500"
-                label="Problem / Discrepancy"
-              />
-
-            </div>
-
-          </section>
-
-
-          {/* COLLECTION TREND */}
-          <CollectionChart />
+          
 
         </div>
 
       </div>
 
-
-      {/* RECONCILIATION */}
-      <section className="glass rounded-[22px] overflow-hidden">
-
-        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800">
-
-          <h2 className="font-bold">
-            Today's Reconciliation
-          </h2>
-
-          <p className="text-xs text-slate-500 mt-1">
-            Track expected cash, collections, returns and discrepancies.
-          </p>
-
-        </div>
-
-
-        <div className="grid grid-cols-2 xl:grid-cols-4">
-
-          <ReconciliationMetric
-            label="TOTAL OUTSTANDING"
-            value="₹41,400"
-          />
-
-          <ReconciliationMetric
-            label="TOTAL COLLECTED"
-            value="₹32,400"
-            positive
-          />
-
-          <ReconciliationMetric
-            label="TOTAL RETURNS"
-            value="₹5,230"
-          />
-
-          <ReconciliationMetric
-            label="DISCREPANCY"
-            value="₹1,600"
-            danger
-          />
-
-        </div>
-
-      </section>
-
     </div>
   );
 }
-
-
-/* ------------------------- */
-/* Small reusable components */
-/* ------------------------- */
 
 function Metric({
   label,
@@ -668,7 +507,6 @@ function Metric({
   );
 }
 
-
 function Attention({
   initials,
   name,
@@ -680,7 +518,7 @@ function Attention({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 p-3 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-900/50 transition"
+      className="w-full flex items-center gap-3 p-3 text-left hover:bg-slate-50 dark:hover:bg-slate-900/50 transition"
     >
 
       <div
@@ -725,52 +563,3 @@ function Attention({
 }
 
 
-function Legend({ color, label }) {
-  return (
-    <div className="flex items-center gap-2">
-
-      <span
-        className={`w-2.5 h-2.5 rounded-full ${color}`}
-      />
-
-      {label}
-
-    </div>
-  );
-}
-
-
-function ReconciliationMetric({
-  label,
-  value,
-  positive,
-  danger,
-}) {
-  return (
-    <div className="p-5 border-r last:border-r-0 border-slate-100 dark:border-slate-800">
-
-      <div
-        className={`text-[9px] font-bold tracking-wide ${
-          danger
-            ? "text-red-600"
-            : positive
-            ? "text-[#2563EB]"
-            : "text-slate-500"
-        }`}
-      >
-        {label}
-      </div>
-
-      <div
-        className={`text-lg font-extrabold mt-2 ${
-          danger
-            ? "text-red-600"
-            : ""
-        }`}
-      >
-        {value}
-      </div>
-
-    </div>
-  );
-}

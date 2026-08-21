@@ -23,11 +23,17 @@ export default function BeatGenerator() {
   const navigate = useNavigate();
 
   const {
-    beatGenerated,
-    beatPublished,
-    generateBeat,
-    publishBeat,
-  } = useBeatSyncStore();
+  beatGenerated,
+  beatPublished,
+  generateBeat,
+  publishBeat,
+
+  beatColumns,
+  beatUnassigned,
+
+  setBeatColumns,
+  setBeatUnassigned,
+} = useBeatSyncStore();
 
   /*
    * We intentionally leave a few stores unassigned after generation.
@@ -37,114 +43,229 @@ export default function BeatGenerator() {
    *        ↓
    * Raju | Suresh | Vikram | Arun
    */
-  const [columns, setColumns] = useState(
-    deliveryBoys.map((boy) => ({
-      ...boy,
-      assigned: [],
-    }))
-  );
+  
 
-  const [unassigned, setUnassigned] = useState([]);
+  const [draggedStore, setDraggedStore] = useState(null);
 
-  const generate = () => {
-    generateBeat();
+ const generate = () => {
+  generateBeat();
 
-    const initialColumns = deliveryBoys.map((boy) => ({
-      ...boy,
-      assigned: [],
-    }));
+  const initialColumns = deliveryBoys.map((boy) => ({
+    ...boy,
+    assigned: [],
+  }));
 
-    /*
-     * Automatically distribute most stores.
-     * Leave two stores unassigned for manual allocation.
-     */
-    beatStores.forEach((store, index) => {
-      if (index < beatStores.length - 2) {
-        const columnIndex = index % deliveryBoys.length;
-        initialColumns[columnIndex].assigned.push(store);
-      }
-    });
+  beatStores.forEach((store, index) => {
+    if (index < beatStores.length - 2) {
+      const columnIndex =
+        index % deliveryBoys.length;
 
-    setColumns(initialColumns);
-    setUnassigned(beatStores.slice(-2));
-  };
+      initialColumns[columnIndex].assigned.push(store);
+    }
+  });
 
-  const assignStore = (store, columnIndex) => {
-    setUnassigned((current) =>
-      current.filter((item) => item.id !== store.id)
+  setBeatColumns(initialColumns);
+  setBeatUnassigned(beatStores.slice(-2));
+};
+
+  const handleDragStart = (store, sourceColumn = null) => {
+  setDraggedStore({
+    store,
+    sourceColumn,
+  });
+};
+
+const handleDragEnd = () => {
+  setDraggedStore(null);
+};
+
+const handleDropOnColumn = (targetColumn) => {
+  if (!draggedStore) return;
+
+  const { store, sourceColumn } = draggedStore;
+
+  if (sourceColumn === targetColumn) {
+    setDraggedStore(null);
+    return;
+  }
+
+  const nextColumns = beatColumns.map((column) => ({
+    ...column,
+    assigned: [...column.assigned],
+  }));
+
+  if (sourceColumn !== null) {
+    const source =
+      nextColumns[sourceColumn].assigned;
+
+    const storeIndex = source.findIndex(
+      (item) => item.id === store.id
     );
 
-    setColumns((current) =>
-      current.map((column, index) =>
-        index === columnIndex
-          ? {
-              ...column,
-              assigned: [...column.assigned, store],
-            }
-          : column
+    if (storeIndex === -1) {
+      setDraggedStore(null);
+      return;
+    }
+
+    source.splice(storeIndex, 1);
+
+    nextColumns[targetColumn].assigned.push(store);
+  } else {
+    setBeatUnassigned(
+      beatUnassigned.filter(
+        (item) => item.id !== store.id
       )
     );
-  };
 
-  const removeStore = (columnIndex, storeIndex) => {
-    setColumns((current) => {
-      const next = current.map((column) => ({
-        ...column,
-        assigned: [...column.assigned],
-      }));
+    nextColumns[targetColumn].assigned.push(store);
+  }
 
-      const [store] = next[columnIndex].assigned.splice(
-        storeIndex,
-        1
-      );
+  setBeatColumns(nextColumns);
+  setDraggedStore(null);
+};
 
-      setUnassigned((items) => [...items, store]);
+const handleDropOnUnassigned = () => {
+  if (!draggedStore) return;
 
-      return next;
-    });
-  };
+  const { store, sourceColumn } = draggedStore;
 
-  const moveStore = (fromColumn, storeIndex, direction) => {
-    const targetColumn = fromColumn + direction;
+  if (sourceColumn === null) {
+    setDraggedStore(null);
+    return;
+  }
 
-    if (
-      targetColumn < 0 ||
-      targetColumn >= columns.length
-    ) {
-      return;
-    }
+  const nextColumns = beatColumns.map((column) => ({
+    ...column,
+    assigned: [...column.assigned],
+  }));
 
-    setColumns((current) => {
-      const next = current.map((column) => ({
-        ...column,
-        assigned: [...column.assigned],
-      }));
+  const source =
+    nextColumns[sourceColumn].assigned;
 
-      const [store] = next[fromColumn].assigned.splice(
-        storeIndex,
-        1
-      );
-
-      next[targetColumn].assigned.push(store);
-
-      return next;
-    });
-  };
-
-  const totalAssigned = useMemo(
-    () =>
-      columns.reduce(
-        (total, column) =>
-          total + column.assigned.length,
-        0
-      ),
-    [columns]
+  const storeIndex = source.findIndex(
+    (item) => item.id === store.id
   );
 
+  if (storeIndex === -1) {
+    setDraggedStore(null);
+    return;
+  }
+
+  source.splice(storeIndex, 1);
+
+  setBeatColumns(nextColumns);
+
+  if (
+    !beatUnassigned.some(
+      (item) => item.id === store.id
+    )
+  ) {
+    setBeatUnassigned([
+      ...beatUnassigned,
+      store,
+    ]);
+  }
+
+  setDraggedStore(null);
+};
+
+  const assignStore = (store, columnIndex) => {
+  setBeatUnassigned(
+    unassigned.filter(
+      (item) => item.id !== store.id
+    )
+  );
+
+  setBeatColumns(
+    columns.map((column, index) =>
+      index === columnIndex
+        ? {
+            ...column,
+            assigned: [
+              ...column.assigned,
+              store,
+            ],
+          }
+        : column
+    )
+  );
+};
+
+  const removeStore = (
+  columnIndex,
+  storeIndex
+) => {
+  const nextColumns = beatColumns.map(
+    (column) => ({
+      ...column,
+      assigned: [...column.assigned],
+    })
+  );
+
+  const [store] =
+    nextColumns[columnIndex].assigned.splice(
+      storeIndex,
+      1
+    );
+
+  if (!store) return;
+
+  setBeatColumns(nextColumns);
+
+  setBeatUnassigned([
+    ...beatUnassigned,
+    store,
+  ]);
+};
+
+  const moveStore = (
+  fromColumn,
+  storeIndex,
+  direction
+) => {
+  const targetColumn =
+    fromColumn + direction;
+
+  if (
+    targetColumn < 0 ||
+    targetColumn >= beatColumns.length
+  ) {
+    return;
+  }
+
+  const nextColumns = beatColumns.map(
+    (column) => ({
+      ...column,
+      assigned: [...column.assigned],
+    })
+  );
+
+  const [store] =
+    nextColumns[fromColumn].assigned.splice(
+      storeIndex,
+      1
+    );
+
+  if (!store) return;
+
+  nextColumns[targetColumn].assigned.push(
+    store
+  );
+
+  setBeatColumns(nextColumns);
+};
+
+  const totalAssigned = useMemo(
+  () =>
+    beatColumns.reduce(
+      (total, column) =>
+        total + column.assigned.length,
+      0
+    ),
+  [beatColumns]
+);
+
   const handlePublish = () => {
-    if (unassigned.length > 0) {
-      return;
-    }
 
     publishBeat();
 
@@ -160,13 +281,11 @@ export default function BeatGenerator() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
 
         <div>
-          <div className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700 dark:text-blue-300">
+          <div className="text-xs font-bold uppercase tracking-[0.75em] text-black-700 dark:text-blue-300">
             Daily route planning
           </div>
 
-          <h1 className="text-3xl font-extrabold tracking-tight mt-1">
-            Build Today's Beat
-          </h1>
+         
 
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-2xl">
             Prioritise overdue collections, keep nearby stores together,
@@ -213,13 +332,21 @@ export default function BeatGenerator() {
         <>
 
           {/* UNASSIGNED STORES */}
-          <section className="glass rounded-[22px] overflow-hidden">
+          <section
+  className={`glass rounded-[22px] overflow-hidden transition ${
+    draggedStore && draggedStore.sourceColumn !== null
+      ? "ring-2 ring-blue-400 bg-blue-50/30 dark:bg-blue-950/20"
+      : ""
+  }`}
+  onDragOver={(event) => event.preventDefault()}
+  onDrop={handleDropOnUnassigned}
+>
 
             <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
 
               <div>
                 <h2 className="font-bold">
-                  Unassigned Stores ({unassigned.length})
+                  Unassigned Stores ({beatUnassigned.length})
                 </h2>
 
                 <p className="text-xs text-slate-500 mt-1">
@@ -274,10 +401,15 @@ export default function BeatGenerator() {
 
                   <tbody>
 
-                    {unassigned.map((store) => (
+                    {beatUnassigned.map((store) => (
 
                       <tr
-                        key={store.id}
+  key={store.id}
+  draggable
+  onDragStart={() =>
+    handleDragStart(store, null)
+  }
+  onDragEnd={handleDragEnd}
                         className="border-t border-slate-100 dark:border-slate-800"
                       >
 
@@ -311,7 +443,7 @@ export default function BeatGenerator() {
 
                           <div className="inline-flex gap-1">
 
-                            {columns.map((boy, index) => (
+                            {beatColumns.map((boy, index) => (
 
                               <button
                                 key={boy.id}
@@ -344,7 +476,7 @@ export default function BeatGenerator() {
               </div>
 
 
-              {unassigned.length === 0 && (
+              {beatUnassigned.length === 0 && (
                 <div className="py-4 text-center text-xs text-emerald-700 dark:text-emerald-300 font-medium">
                   ✓ All stores have been assigned
                 </div>
@@ -371,7 +503,7 @@ export default function BeatGenerator() {
               </div>
 
               <div className="text-xs text-slate-500">
-                {columns.length} delivery boys
+                {beatColumns.length} delivery boys
               </div>
 
             </div>
@@ -379,12 +511,20 @@ export default function BeatGenerator() {
 
             <div className="grid xl:grid-cols-4 md:grid-cols-2 gap-3">
 
-              {columns.map((boy, columnIndex) => (
+             {beatColumns.map((boy, columnIndex) => (
 
-                <div
-                  key={boy.id}
-                  className="glass rounded-[20px] overflow-hidden"
-                >
+  <div
+    key={boy.id}
+    onDragOver={(event) => event.preventDefault()}
+    onDrop={() =>
+      handleDropOnColumn(columnIndex)
+    }
+    className={`glass rounded-[20px] overflow-hidden transition ${
+      draggedStore
+        ? "hover:ring-2 hover:ring-blue-400"
+        : ""
+    }`}
+  >
 
                   {/* BOY HEADER */}
                   <div className="px-4 py-3 bg-[#2563EB] text-white">
@@ -431,9 +571,14 @@ export default function BeatGenerator() {
                       (store, storeIndex) => (
 
                         <div
-                          key={store.id}
-                          className="group rounded-xl border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40 p-3"
-                        >
+                        key={store.id}
+                        draggable
+                        onDragStart={() =>
+                          handleDragStart(store, columnIndex)
+                        }
+                        onDragEnd={handleDragEnd}
+                        className="group rounded-xl border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40 p-3 cursor-grab active:cursor-grabbing hover:border-blue-300 dark:hover:border-blue-800 transition"
+                      >
 
                           <div className="flex items-start gap-2">
 
@@ -518,7 +663,7 @@ export default function BeatGenerator() {
                               )}
 
                               {columnIndex <
-                                columns.length - 1 && (
+                                beatColumns.length - 1 && (
                                 <button
                                   onClick={() =>
                                     moveStore(
@@ -552,7 +697,7 @@ export default function BeatGenerator() {
 
                       <div className="flex gap-1">
 
-                        {unassigned.map((store) => (
+                        {beatUnassigned.map((store) => (
 
                           <button
                             key={store.id}
@@ -599,11 +744,11 @@ export default function BeatGenerator() {
                 </div>
 
                 <div className="text-xs text-slate-500 mt-1">
-                  {beatPublished
-                    ? "The delivery team has received today's beat."
-                    : unassigned.length > 0
-                    ? `${unassigned.length} store(s) still need assignment.`
-                    : "Beat will be sent to all delivery boys."}
+                 {beatPublished
+                  ? "The delivery team has received today's beat."
+                  : beatUnassigned.length > 0
+                  ? `${beatUnassigned.length} store(s) remain unassigned. You can still publish the beat.`
+                  : "Beat will be sent to all delivery boys."}
                 </div>
 
               </div>
@@ -612,14 +757,10 @@ export default function BeatGenerator() {
               {!beatPublished ? (
 
                 <button
-                  disabled={unassigned.length > 0}
+                  
                   onClick={handlePublish}
-                  className={`pill min-w-[230px] py-3 flex items-center justify-center gap-2 font-semibold transition ${
-                    unassigned.length > 0
-                      ? "bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-800"
-                      : "bg-[#2563EB] hover:bg-[#005b57] text-white"
-                  }`}
-                >
+                  className="pill min-w-[230px] py-3 flex items-center justify-center gap-2 font-semibold transition bg-[#2563EB] hover:bg-[#005b57] text-white"
+                  >
                   <Send size={16} />
                   Publish Beat
                 </button>

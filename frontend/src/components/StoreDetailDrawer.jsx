@@ -28,16 +28,17 @@ export default function StoreDetailDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-950/30 backdrop-blur-[2px]"
-      onClick={onClose}
-    >
+  className="fixed inset-0 z-50 bg-slate-950/30 backdrop-blur-[3px] flex items-center justify-center p-4"
+  onClick={onClose}
+>
 
       <section
-        onClick={(event) =>
-          event.stopPropagation()
-        }
-        className="absolute right-0 top-0 h-full w-full max-w-xl overflow-y-auto soft-scroll bg-[#f7fbfb] dark:bg-[#0b1d2b] shadow-2xl"
-      >
+        
+    onClick={(event) =>
+      event.stopPropagation()
+    }
+    className="relative w-[92%] max-w-2xl max-h-[90vh] overflow-y-auto soft-scroll bg-[#f7fbfb] dark:bg-[#0b1d2b] rounded-[24px] shadow-2xl"
+  >
 
         {/* HEADER */}
         <div className="sticky top-0 z-10 px-6 py-5 bg-[#f7fbfb]/95 dark:bg-[#0b1d2b]/95 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800">
