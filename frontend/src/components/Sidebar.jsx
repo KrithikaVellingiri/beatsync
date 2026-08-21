@@ -1,5 +1,4 @@
 import {
-  Activity,
   LayoutDashboard,
   ListChecks,
   Moon,
@@ -13,7 +12,7 @@ import { NavLink } from "react-router-dom";
 
 import { useBeatSyncStore } from "../store/useBeatSyncStore";
 
-export default function Sidebar() {
+export default function Sidebar({ onSettings }) {
   const {
     theme,
     setTheme,
@@ -96,16 +95,13 @@ export default function Sidebar() {
       {/* BOTTOM */}
       <div className="mt-auto p-4 space-y-1">
 
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-slate-600 hover:bg-blue-50 dark:text-slate-300 dark:hover:bg-blue-950/30">
-          <Activity size={17} />
-          Operations status
-
-          {/* Green is intentionally kept for status */}
-          <span className="ml-auto w-2 h-2 rounded-full bg-emerald-500" />
-        </button>
+        
 
 
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-slate-600 hover:bg-blue-50 dark:text-slate-300 dark:hover:bg-blue-950/30">
+        <button
+          onClick={onSettings}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-slate-600 hover:bg-blue-50 dark:text-slate-300 dark:hover:bg-blue-950/30"
+        >
           <Settings size={17} />
           Settings
         </button>

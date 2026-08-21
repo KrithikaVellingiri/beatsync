@@ -12,7 +12,7 @@ export default function CollectionChart() {
           <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fontSize:12,fill:"#64748b"}}/>
           <YAxis axisLine={false} tickLine={false} tick={{fontSize:11,fill:"#64748b"}} tickFormatter={(v)=>`₹${v/1000}k`}/>
           <Tooltip formatter={(v)=>[`₹${Number(v).toLocaleString("en-IN")}`,"Collection"]} contentStyle={{borderRadius:14,border:"1px solid #dbeafe"}}/>
-          <Area type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={3} fill="url(#blueFill)" />
+          <Area type="monotone" dataKey="amount" stroke="#2563eb" strokeWidth={3} fill="url(#blueFill)" />
         </AreaChart>
       </ResponsiveContainer>
     </div>

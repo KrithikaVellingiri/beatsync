@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import CollectionChart from "../components/CollectionChart";
 import StoreDetailDrawer from "../components/StoreDetailDrawer";
 import {
   deliveryBoys,
@@ -34,10 +35,14 @@ export default function Ledger() {
     setSearch,
     sort,
     setSort,
+    closedDays,
+    closeDay,
   } = useBeatSyncStore();
 
   const [storeFilter, setStoreFilter] =
     useState("all");
+  const [closeDayOpen, setCloseDayOpen] =
+    useState(false);
 
 
   const filteredStores = useMemo(() => {
@@ -111,6 +116,10 @@ export default function Ledger() {
     (boy) => boy.id === selectedBoy
   );
 
+  const isDayClosed =
+    selectedBoyData &&
+    (selectedBoyData.dayClosed || closedDays[selectedBoy]);
+
 
   return (
     <div className="space-y-5">
@@ -159,13 +168,14 @@ export default function Ledger() {
 
       <div className="flex items-center gap-2">
 
-        {selectedBoyData.dayClosed ? (
+        {isDayClosed ? (
           <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold">
             <CheckCircle2 size={14} />
             Day Closed
           </span>
         ) : (
           <button
+            onClick={() => setCloseDayOpen(true)}
             className="px-4 py-2.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold transition"
           >
             Close Day
@@ -556,7 +566,8 @@ export default function Ledger() {
         </div>
 
       </section>
-
+              {/* COLLECTIONS CHART */}
+      <CollectionChart />
 
       {/* INFO */}
       <section className="glass rounded-[20px] p-4 flex items-start gap-3">
@@ -588,6 +599,17 @@ export default function Ledger() {
           onClose={() =>
             setSelectedStore(null)
           }
+        />
+      )}
+
+      {closeDayOpen && selectedBoyData && (
+        <CloseDayModal
+          boy={selectedBoyData}
+          onClose={() => setCloseDayOpen(false)}
+          onConfirm={() => {
+            closeDay(selectedBoyData.id);
+            setCloseDayOpen(false);
+          }}
         />
       )}
 
@@ -665,6 +687,80 @@ function Recon({
         </div>
       )}
 
+    </div>
+  );
+}
+
+function CloseDayModal({ boy, onClose, onConfirm }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className="glass w-full max-w-lg rounded-2xl border border-slate-200 p-5 text-slate-900 shadow-2xl dark:border-slate-800 dark:text-white sm:p-6"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="close-day-title"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 id="close-day-title" className="text-lg font-bold">
+              Close day for {boy.name}
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Are you sure you want to close today's reconciliation? This will mark today's beat as closed.
+            </p>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+            aria-label="Close confirmation"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <ReconSummary label="Expected Cash" value={boy.expectedCash} />
+          <ReconSummary label="Submitted Cash" value={boy.submittedCash} />
+          <ReconSummary label="Difference" value={boy.expectedCash - boy.submittedCash} />
+          <ReconSummary label="Returns" value={boy.returns} />
+          <ReconSummary label="Outstanding" value={boy.outstanding} />
+          <ReconSummary label="Discrepancy" value={boy.discrepancy} />
+        </div>
+
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="rounded-xl bg-[#2563EB] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-blue-700"
+          >
+            Confirm &amp; Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReconSummary({ label, value }) {
+  return (
+    <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-900/50">
+      <div className="text-[9px] font-bold uppercase tracking-wide text-slate-500">
+        {label}
+      </div>
+      <div className="mt-1 text-sm font-extrabold">
+        ₹{value.toLocaleString("en-IN")}
+      </div>
     </div>
   );
 }

@@ -18,6 +18,7 @@ export const useBeatSyncStore = create((set) => ({
   beatUnassigned: [],
 
   selectedBoy: "all",
+  closedDays: {},
   selectedStore: null,
   search: "",
   sort: "highest",
@@ -159,6 +160,14 @@ export const useBeatSyncStore = create((set) => ({
 
   setSelectedBoy: (selectedBoy) =>
     set({ selectedBoy }),
+
+  closeDay: (boyId) =>
+    set((state) => ({
+      closedDays: {
+        ...state.closedDays,
+        [boyId]: true,
+      },
+    })),
 
   setSelectedStore: (selectedStore) =>
     set({ selectedStore }),

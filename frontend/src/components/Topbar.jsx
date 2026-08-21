@@ -4,9 +4,13 @@ import { useState } from "react";
 import {
   Bell,
   Bot,
+  Building2,
   Menu,
   CalendarDays,
-  X, ChevronLeft, ChevronRight,
+  Mail,
+  Phone,
+  UserRound,
+  X,
 } from "lucide-react";
 
 
@@ -15,6 +19,7 @@ import PendingCalendar from "./PendingCalendar";
 
 export default function Topbar({ onAsk }) {
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const location = useLocation();
 
   const title =
@@ -105,8 +110,82 @@ export default function Topbar({ onAsk }) {
         </button>
 
 
-        <div className="w-8 h-8 rounded-full bg-white/15 grid place-items-center text-xs font-bold">
-          SJ
+        <div className="relative">
+          <button
+            onClick={() => setProfileOpen((value) => !value)}
+            className="w-8 h-8 rounded-full bg-white/15 grid place-items-center text-xs font-bold hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/70"
+            aria-label="Open owner profile"
+            aria-expanded={profileOpen}
+            title="Owner profile"
+          >
+            SJ
+          </button>
+
+          {profileOpen && (
+            <div className="absolute right-0 top-12 z-40 w-[min(22rem,calc(100vw-2rem))] glass rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-4 text-slate-900 dark:text-white">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-blue-100 text-[#2563eb] grid place-items-center font-bold">
+                    SJ
+                  </div>
+                  <div>
+                    <div className="font-bold">Sharma ji</div>
+                    <div className="text-xs text-slate-500">Owner</div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setProfileOpen(false)}
+                  className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                  aria-label="Close owner profile"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="mt-4 space-y-3 border-t border-slate-200 dark:border-slate-800 pt-4 text-sm">
+                <div className="flex items-center gap-3">
+                  <Building2 size={16} className="text-[#2563eb]" />
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wide text-slate-500">Business</div>
+                    <div className="font-semibold">Sharma Distributors</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <UserRound size={16} className="text-[#2563eb]" />
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wide text-slate-500">Owner name</div>
+                    <div className="font-semibold">Sharma ji</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Mail size={16} className="text-[#2563eb]" />
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wide text-slate-500">Email address</div>
+                    <div className="font-semibold truncate">sharma.distributors@example.com</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Phone size={16} className="text-[#2563eb]" />
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wide text-slate-500">Phone number</div>
+                    <div className="font-semibold">+91 98765 43210</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 border-t border-slate-200 dark:border-slate-800 pt-4">
+                <button
+                  onClick={() => setProfileOpen(false)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
