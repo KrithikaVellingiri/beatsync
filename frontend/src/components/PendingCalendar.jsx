@@ -2,8 +2,12 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { pendingItemsByDate } from "../data/mockData";
 import StatusBadge from "./StatusBadge";
+import { useBeatSyncStore } from "../store/useBeatSyncStore";
+import { translate } from "../i18n";
 
 export default function PendingCalendar({ onClose }) {
+  const language = useBeatSyncStore((state) => state.language);
+  const t = (key) => translate(language, key);
   const [selectedDate, setSelectedDate] = useState(
     new Date("2026-08-19")
   );
@@ -54,11 +58,11 @@ export default function PendingCalendar({ onClose }) {
 
         <div>
           <div className="font-bold">
-            Pending Items
+            {t("pendingItems")}
           </div>
 
           <div className="text-[10px] text-slate-500">
-            Select a date to view pending stores
+            {t("selectDatePending")}
           </div>
         </div>
 
@@ -176,7 +180,7 @@ export default function PendingCalendar({ onClose }) {
 
           <div>
             <div className="text-[10px] uppercase tracking-wide text-slate-500">
-              Selected Date
+              {t("selectedDate")}
             </div>
 
             <div className="font-bold text-sm mt-1">
@@ -192,7 +196,7 @@ export default function PendingCalendar({ onClose }) {
           </div>
 
           <span className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-950/30 px-2.5 py-1 rounded-full">
-            {pendingItems.length} pending
+            {pendingItems.length} {t("pending")}
           </span>
 
         </div>
@@ -203,7 +207,7 @@ export default function PendingCalendar({ onClose }) {
         {pendingItems.length === 0 ? (
 
           <div className="text-center py-6 text-xs text-slate-500">
-            No pending items for this date.
+            {t("noPendingItems")}
           </div>
 
         ) : (

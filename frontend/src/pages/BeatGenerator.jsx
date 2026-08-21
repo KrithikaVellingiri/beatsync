@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { beatStores, deliveryBoys } from "../data/mockData";
 import { useBeatSyncStore } from "../store/useBeatSyncStore";
 import StatusBadge from "../components/StatusBadge";
+import { translate } from "../i18n";
 
 const statusMap = {
   healthy: "Healthy",
@@ -21,6 +22,8 @@ const statusMap = {
 
 export default function BeatGenerator() {
   const navigate = useNavigate();
+  const language = useBeatSyncStore((state) => state.language);
+  const t = (key) => translate(language, key);
 
   const {
   beatGenerated,
@@ -282,14 +285,13 @@ const handleDropOnUnassigned = () => {
 
         <div>
           <div className="text-xs font-bold uppercase tracking-[0.75em] text-black-700 dark:text-blue-300">
-            Daily route planning
+            {t("dailyRoutePlanning")}
           </div>
 
          
 
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-2xl">
-            Prioritise overdue collections, keep nearby stores together,
-            and balance workload across the delivery team.
+            {t("routePlanningSubtitle")}
           </p>
         </div>
 
@@ -300,8 +302,8 @@ const handleDropOnUnassigned = () => {
           <Sparkles size={17} />
 
           {beatGenerated
-            ? "Regenerate Beat"
-            : "Generate Today's Beat"}
+            ? t("regenerateBeat")
+            : t("generateTodaysBeat")}
         </button>
 
       </div>
@@ -316,12 +318,11 @@ const handleDropOnUnassigned = () => {
           </div>
 
           <h2 className="font-bold text-lg mt-4">
-            Ready to create today's beat?
+            {t("readyToCreateBeat")}
           </h2>
 
           <p className="text-sm text-slate-500 mt-2 max-w-md mx-auto">
-            Generate a rule-based delivery plan using outstanding dues,
-            locality, previous visits and workload balance.
+            {t("generatePlan")}
           </p>
 
         </div>
@@ -346,16 +347,16 @@ const handleDropOnUnassigned = () => {
 
               <div>
                 <h2 className="font-bold">
-                  Unassigned Stores ({beatUnassigned.length})
+                  {t("unassignedStores")} ({beatUnassigned.length})
                 </h2>
 
                 <p className="text-xs text-slate-500 mt-1">
-                  Add remaining stores to a delivery boy's beat.
+                  {t("addRemainingStores")}
                 </p>
               </div>
 
               <span className="text-xs font-semibold text-slate-500">
-                {totalAssigned} assigned
+                {totalAssigned} {t("assigned")}
               </span>
 
             </div>
@@ -370,31 +371,31 @@ const handleDropOnUnassigned = () => {
                   <thead className="text-[10px] uppercase tracking-wide text-slate-500">
                     <tr>
                       <th className="text-left px-3 py-2">
-                        Store
+                        {t("stores")}
                       </th>
 
                       <th className="text-left px-3 py-2">
-                        Locality
+                        {t("location")}
                       </th>
 
                       <th className="text-right px-3 py-2">
-                        Outstanding
+                        {t("outstanding")}
                       </th>
 
                       <th className="text-center px-3 py-2">
-                        Last Visit
+                        {t("lastVisit")}
                       </th>
 
                       <th className="text-center px-3 py-2">
-                        Days
+                        {t("days")}
                       </th>
 
                       <th className="text-center px-3 py-2">
-                        Priority
+                        {t("priority")}
                       </th>
 
                       <th className="text-right px-3 py-2">
-                        Assign
+                        {t("assign")}
                       </th>
                     </tr>
                   </thead>
@@ -478,7 +479,7 @@ const handleDropOnUnassigned = () => {
 
               {beatUnassigned.length === 0 && (
                 <div className="py-4 text-center text-xs text-emerald-700 dark:text-emerald-300 font-medium">
-                  ✓ All stores have been assigned
+                  ✓ {t("allAssigned")}
                 </div>
               )}
 
@@ -494,16 +495,16 @@ const handleDropOnUnassigned = () => {
 
               <div>
                 <h2 className="font-bold">
-                  Delivery Boy Assignments
+                  {t("deliveryBoyAssignments")}
                 </h2>
 
                 <p className="text-xs text-slate-500 mt-1">
-                  Move stores between routes to balance workload.
+                  {t("balanceWorkload")}
                 </p>
               </div>
 
               <div className="text-xs text-slate-500">
-                {beatColumns.length} delivery boys
+                {beatColumns.length} {t("deliveryBoys")}
               </div>
 
             </div>
@@ -554,7 +555,7 @@ const handleDropOnUnassigned = () => {
                         </div>
 
                         <div className="text-[9px] text-white/70">
-                          stores
+                          {t("stores")}
                         </div>
 
                       </div>
@@ -606,7 +607,7 @@ const handleDropOnUnassigned = () => {
                               <div className="flex items-center justify-between mt-1">
 
                                 <div className="text-[10px] text-slate-500">
-                                  Last visit: {store.lastVisited || "—"}
+                                  {t("lastVisit")}: {store.lastVisited || "—"}
                                 </div>
 
                                 <StatusBadge
@@ -617,7 +618,7 @@ const handleDropOnUnassigned = () => {
 
                               {store.daysSinceVisit !== undefined && (
                                 <div className="text-[10px] text-slate-500 mt-1">
-                                  {store.daysSinceVisit} days since last visit
+                                  {store.daysSinceVisit} {t("daysSinceLastVisit")}
                                 </div>
                               )}
 
@@ -641,7 +642,7 @@ const handleDropOnUnassigned = () => {
                               className="text-[10px] text-slate-400 hover:text-red-600"
                             >
                               <X size={12} className="inline mr-1" />
-                              Remove
+                              {t("remove")}
                             </button>
 
 
@@ -692,7 +693,7 @@ const handleDropOnUnassigned = () => {
                     <div className="pt-1">
 
                       <div className="text-[10px] text-slate-400 text-center mb-2">
-                        Add another store
+                        {t("addAnotherStore")}
                       </div>
 
                       <div className="flex gap-1">
@@ -710,7 +711,7 @@ const handleDropOnUnassigned = () => {
                             className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg border border-dashed border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-300 dark:hover:bg-blue-950/30 text-[10px] font-semibold"
                           >
                             <Plus size={12} />
-                            Add
+                            {t("add")}
                           </button>
 
                         ))}
@@ -739,16 +740,16 @@ const handleDropOnUnassigned = () => {
 
                 <div className="font-bold">
                   {beatPublished
-                    ? "Beat published successfully"
-                    : "Ready to publish?"}
+                    ? t("beatPublished")
+                    : t("readyToPublish")}
                 </div>
 
                 <div className="text-xs text-slate-500 mt-1">
                  {beatPublished
-                  ? "The delivery team has received today's beat."
+                  ? t("teamReceivedBeat")
                   : beatUnassigned.length > 0
-                  ? `${beatUnassigned.length} store(s) remain unassigned. You can still publish the beat.`
-                  : "Beat will be sent to all delivery boys."}
+                  ? `${beatUnassigned.length} ${t("remainUnassigned")}`
+                  : t("beatSent")}
                 </div>
 
               </div>
@@ -762,7 +763,7 @@ const handleDropOnUnassigned = () => {
                   className="pill min-w-[230px] py-3 flex items-center justify-center gap-2 font-semibold transition bg-[#2563EB] hover:bg-[#005b57] text-white"
                   >
                   <Send size={16} />
-                  Publish Beat
+                  {t("publishBeat")}
                 </button>
 
               ) : (
@@ -773,7 +774,7 @@ const handleDropOnUnassigned = () => {
                   }
                   className="pill min-w-[230px] py-3 bg-[#2563EB] text-white font-semibold"
                 >
-                  Go to Live Dashboard
+                  {t("goToDashboard")}
                 </button>
 
               )}

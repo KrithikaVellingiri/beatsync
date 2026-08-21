@@ -16,18 +16,22 @@ import {
 
 import { useLocation } from "react-router-dom";
 import PendingCalendar from "./PendingCalendar";
+import { translate } from "../i18n";
+import { useBeatSyncStore } from "../store/useBeatSyncStore";
 
 export default function Topbar({ onAsk }) {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const location = useLocation();
+  const language = useBeatSyncStore((state) => state.language);
+  const t = (key) => translate(language, key);
 
   const title =
     location.pathname.includes("beat")
-      ? "Beat Generator"
+      ? t("beatGenerator")
       : location.pathname.includes("ledger")
-      ? "Store Ledger"
-      : "Live Dashboard";
+      ? t("storeLedger")
+      : t("liveDashboard");
 
   const date =
     new Intl.DateTimeFormat(
@@ -77,7 +81,7 @@ export default function Topbar({ onAsk }) {
           className="hidden sm:flex items-center gap-2 rounded-full px-3 py-2 bg-white/10 hover:bg-white/15 text-xs font-semibold"
         >
           <Bot size={15} />
-          Ask BeatSync AI
+          {t("askBeatSyncAI")}
         </button>
 
         <div className="relative">
@@ -147,7 +151,7 @@ export default function Topbar({ onAsk }) {
                 <div className="flex items-center gap-3">
                   <Building2 size={16} className="text-[#2563eb]" />
                   <div>
-                    <div className="text-[10px] uppercase tracking-wide text-slate-500">Business</div>
+                    <div className="text-[10px] uppercase tracking-wide text-slate-500">{t("business")}</div>
                     <div className="font-semibold">Sharma Distributors</div>
                   </div>
                 </div>
@@ -155,7 +159,7 @@ export default function Topbar({ onAsk }) {
                 <div className="flex items-center gap-3">
                   <UserRound size={16} className="text-[#2563eb]" />
                   <div>
-                    <div className="text-[10px] uppercase tracking-wide text-slate-500">Owner name</div>
+                    <div className="text-[10px] uppercase tracking-wide text-slate-500">{t("ownerName")}</div>
                     <div className="font-semibold">Sharma ji</div>
                   </div>
                 </div>
@@ -163,14 +167,14 @@ export default function Topbar({ onAsk }) {
                 <div className="flex items-center gap-3">
                   <Mail size={16} className="text-[#2563eb]" />
                   <div className="min-w-0">
-                    <div className="text-[10px] uppercase tracking-wide text-slate-500">Email address</div>
+                    <div className="text-[10px] uppercase tracking-wide text-slate-500">{t("emailAddress")}</div>
                     <div className="font-semibold truncate">sharma.distributors@example.com</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone size={16} className="text-[#2563eb]" />
                   <div>
-                    <div className="text-[10px] uppercase tracking-wide text-slate-500">Phone number</div>
+                    <div className="text-[10px] uppercase tracking-wide text-slate-500">{t("phoneNumber")}</div>
                     <div className="font-semibold">+91 98765 43210</div>
                   </div>
                 </div>
@@ -181,7 +185,7 @@ export default function Topbar({ onAsk }) {
                   onClick={() => setProfileOpen(false)}
                   className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
-                  Logout
+                  {t("logout")}
                 </button>
               </div>
             </div>

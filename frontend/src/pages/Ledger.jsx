@@ -22,6 +22,7 @@ import {
 } from "../store/useBeatSyncStore";
 
 import StatusBadge from "../components/StatusBadge";
+import { translate } from "../i18n";
 
 
 export default function Ledger() {
@@ -37,7 +38,9 @@ export default function Ledger() {
     setSort,
     closedDays,
     closeDay,
+    language,
   } = useBeatSyncStore();
+  const t = (key) => translate(language, key);
 
   const [storeFilter, setStoreFilter] =
     useState("all");
@@ -138,8 +141,7 @@ export default function Ledger() {
           </h1> */}
 
           <div className="text-xs font-extrabold uppercase tracking-[0.5em] text-[#000000] dark:text-blue-300">
-            View deliveries, payments, returns, credit and
-            outstanding balances for every store.
+            {t("ledgerSubtitle")}
           </div>
 
         </div>
@@ -154,7 +156,7 @@ export default function Ledger() {
 
       <div>
         <div className="text-xs font-bold uppercase tracking-wide text-[#2563EB]">
-          Today's reconciliation
+          {t("todayReconciliation")}
         </div>
 
         <h2 className="text-xl font-extrabold mt-1">
@@ -162,7 +164,7 @@ export default function Ledger() {
         </h2>
 
         <p className="text-xs text-slate-500 mt-1">
-          Cash, returns, outstanding and discrepancy for today's beat.
+          {t("reconciliationSubtitle")}
         </p>
       </div>
 
@@ -171,14 +173,14 @@ export default function Ledger() {
         {isDayClosed ? (
           <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold">
             <CheckCircle2 size={14} />
-            Day Closed
+            {t("dayClosed")}
           </span>
         ) : (
           <button
             onClick={() => setCloseDayOpen(true)}
             className="px-4 py-2.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold transition"
           >
-            Close Day
+            {t("closeDay")}
           </button>
         )}
 
@@ -191,17 +193,17 @@ export default function Ledger() {
     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
 
       <Recon
-        label="EXPECTED CASH"
+        label={t("expectedCash")}
         value={selectedBoyData.expectedCash}
       />
 
       <Recon
-        label="SUBMITTED CASH"
+        label={t("submittedCash")}
         value={selectedBoyData.submittedCash}
       />
 
       <Recon
-        label="DIFFERENCE"
+        label={t("difference")}
         value={selectedBoyData.expectedCash - selectedBoyData.submittedCash}
         danger={
           selectedBoyData.expectedCash !==
@@ -210,17 +212,17 @@ export default function Ledger() {
       />
 
       <Recon
-        label="RETURNS"
+        label={t("returns")}
         value={selectedBoyData.returns}
       />
 
       <Recon
-        label="OUTSTANDING"
+        label={t("outstanding")}
         value={selectedBoyData.outstanding}
       />
 
       <Recon
-        label="DISCREPANCY"
+        label={t("discrepancy")}
         value={selectedBoyData.discrepancy}
         danger={selectedBoyData.discrepancy > 0}
       />
@@ -251,7 +253,7 @@ export default function Ledger() {
             >
 
               <option value="all">
-                All Boys
+                {t("allBoys")}
               </option>
 
               {deliveryBoys.map(
@@ -286,19 +288,19 @@ export default function Ledger() {
             className="min-w-[135px] px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/40 text-xs font-medium outline-none"
           >
             <option value="all">
-              All Stores
+              {t("allStores")}
             </option>
 
             <option value="critical">
-              Critical
+              {t("critical")}
             </option>
 
             <option value="watch">
-              Watch
+              {t("watch")}
             </option>
 
             <option value="healthy">
-              Healthy
+              {t("healthy")}
             </option>
           </select>
 
@@ -313,19 +315,19 @@ export default function Ledger() {
           >
 
             <option value="highest">
-              Outstanding (High to Low)
+              {t("highestOutstanding")}
             </option>
 
             <option value="overdue">
-              Overdue (High to Low)
+              {t("mostOverdue")}
             </option>
 
             <option value="name">
-              Store Name
+              {t("storeName")}
             </option>
 
             <option value="recent">
-              Recent Activity
+              {t("mostActive")}
             </option>
 
           </select>
@@ -344,7 +346,7 @@ export default function Ledger() {
               onChange={(e) =>
                 setSearch(e.target.value)
               }
-              placeholder="Search store..."
+              placeholder={t("searchStore")}
               className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/40 text-xs outline-none focus:ring-2 focus:ring-blue-200"
             />
 
@@ -359,7 +361,7 @@ export default function Ledger() {
           <div className="flex items-center gap-2 mt-3 px-1">
 
             <span className="text-[11px] text-slate-500">
-              Showing stores for
+              {t("showingStoresFor")}
             </span>
 
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-[#2563EB] dark:bg-blue-950/40 dark:text-blue-300 text-[10px] font-bold">
@@ -397,23 +399,23 @@ export default function Ledger() {
               <tr>
 
                 <th className="text-left px-4 py-3">
-                  Store
+                  {t("stores")}
                 </th>
 
                 <th className="text-left px-4 py-3">
-                  Boy
+                  {t("boy")}
                 </th>
 
                 <th className="text-left px-4 py-3">
-                  Outstanding
+                  {t("outstanding")}
                 </th>
 
                 <th className="text-left px-4 py-3">
-                  Last Payment
+                  {t("lastPayment")}
                 </th>
 
                 <th className="text-left px-4 py-3">
-                  Status
+                  {t("currentStatus")}
                 </th>
 
                 <th></th>
@@ -529,7 +531,7 @@ export default function Ledger() {
         {filteredStores.length === 0 && (
 
           <div className="p-12 text-center text-slate-500 text-sm">
-            No stores match the selected filters.
+            {t("noStoresFound")}
           </div>
 
         )}
@@ -543,22 +545,22 @@ export default function Ledger() {
         <div className="grid grid-cols-2 xl:grid-cols-4">
 
           <Total
-            label="TOTAL OUTSTANDING"
+            label={t("totalOutstanding")}
             value="₹41,400"
           />
 
           <Total
-            label="TOTAL COLLECTED"
+            label={t("totalCollected")}
             value="₹32,400"
           />
 
           <Total
-            label="TOTAL RETURNS"
+            label={t("totalReturns")}
             value="₹5,230"
           />
 
           <Total
-            label="DISCREPANCY"
+            label={t("discrepancy")}
             value="₹1,600"
             danger
           />
@@ -579,12 +581,11 @@ export default function Ledger() {
         <div>
 
           <div className="text-xs font-bold">
-            Tap any store to view full details
+            {t("tapStoreDetails")}
           </div>
 
           <div className="text-xs text-slate-500 mt-1">
-            Includes deliveries, payments, returns,
-            outstanding balance and payment history.
+            {t("storeDetailsSubtitle")}
           </div>
 
         </div>
@@ -603,8 +604,9 @@ export default function Ledger() {
       )}
 
       {closeDayOpen && selectedBoyData && (
-        <CloseDayModal
+          <CloseDayModal
           boy={selectedBoyData}
+            t={t}
           onClose={() => setCloseDayOpen(false)}
           onConfirm={() => {
             closeDay(selectedBoyData.id);
@@ -691,7 +693,7 @@ function Recon({
   );
 }
 
-function CloseDayModal({ boy, onClose, onConfirm }) {
+function CloseDayModal({ boy, onClose, onConfirm, t }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]"
@@ -708,29 +710,29 @@ function CloseDayModal({ boy, onClose, onConfirm }) {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 id="close-day-title" className="text-lg font-bold">
-              Close day for {boy.name}
+              {t("closeDayFor")} {boy.name}
             </h2>
             <p className="mt-1 text-xs text-slate-500">
-              Are you sure you want to close today's reconciliation? This will mark today's beat as closed.
+              {t("closeDayMessage")}
             </p>
           </div>
 
           <button
             onClick={onClose}
             className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
-            aria-label="Close confirmation"
+            aria-label={t("closeConfirmation")}
           >
             <X size={18} />
           </button>
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          <ReconSummary label="Expected Cash" value={boy.expectedCash} />
-          <ReconSummary label="Submitted Cash" value={boy.submittedCash} />
-          <ReconSummary label="Difference" value={boy.expectedCash - boy.submittedCash} />
-          <ReconSummary label="Returns" value={boy.returns} />
-          <ReconSummary label="Outstanding" value={boy.outstanding} />
-          <ReconSummary label="Discrepancy" value={boy.discrepancy} />
+          <ReconSummary label={t("expectedCashLabel")} value={boy.expectedCash} />
+          <ReconSummary label={t("submittedCashLabel")} value={boy.submittedCash} />
+          <ReconSummary label={t("differenceLabel")} value={boy.expectedCash - boy.submittedCash} />
+          <ReconSummary label={t("returns")} value={boy.returns} />
+          <ReconSummary label={t("outstanding")} value={boy.outstanding} />
+          <ReconSummary label={t("discrepancy")} value={boy.discrepancy} />
         </div>
 
         <div className="mt-6 flex justify-end gap-2">
@@ -738,13 +740,13 @@ function CloseDayModal({ boy, onClose, onConfirm }) {
             onClick={onClose}
             className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
           >
-            Cancel
+            {t("cancel")}
           </button>
           <button
             onClick={onConfirm}
             className="rounded-xl bg-[#2563EB] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-blue-700"
           >
-            Confirm &amp; Close
+            {t("confirmClose")}
           </button>
         </div>
       </div>

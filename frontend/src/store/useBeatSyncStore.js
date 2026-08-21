@@ -3,6 +3,7 @@ import { stores, deliveryBoys, } from "../data/mockData";
 
 export const useBeatSyncStore = create((set) => ({
   theme: localStorage.getItem("beatsync-theme") || "light",
+  language: localStorage.getItem("beatsync-language") || "en",
 
   beatGenerated: false,
   beatPublished: false,
@@ -39,6 +40,9 @@ export const useBeatSyncStore = create((set) => ({
     return acc;
   }, {}),
 
+  managedStores: JSON.parse(localStorage.getItem("beatsync-managed-stores") || "null") || stores,
+  managedProducts: JSON.parse(localStorage.getItem("beatsync-managed-products") || "null") || [],
+
   unassignedStores: stores
     .filter((store) => !store.boyId)
     .map((store) => store.id),
@@ -51,6 +55,18 @@ export const useBeatSyncStore = create((set) => ({
     localStorage.setItem("beatsync-theme", theme);
     set({ theme });
   },
+
+  setLanguage: (language) => {
+    localStorage.setItem("beatsync-language", language);
+    set({ language });
+  },
+
+  saveSettings: () =>
+    set((state) => {
+      localStorage.setItem("beatsync-managed-stores", JSON.stringify(state.managedStores));
+      localStorage.setItem("beatsync-managed-products", JSON.stringify(state.managedProducts));
+      return { settingsSavedAt: Date.now() };
+    }),
 
   // --------------------------------
   // BEAT STATUS
@@ -167,6 +183,26 @@ export const useBeatSyncStore = create((set) => ({
         ...state.closedDays,
         [boyId]: true,
       },
+    })),
+
+  addStore: (storeDetails) =>
+    set((state) => ({
+      managedStores: [
+        ...state.managedStores,
+        {
+          id: `STR-${String(state.managedStores.length + 1).padStart(3, "0")}`,
+          name: storeDetails.name,
+          area: storeDetails.location,
+          locality: storeDetails.location,
+          contact: storeDetails.phone,
+          status: "Healthy",
+        },
+      ],
+    })),
+
+  addProduct: (productDetails) =>
+    set((state) => ({
+      managedProducts: [...state.managedProducts, productDetails],
     })),
 
   setSelectedStore: (selectedStore) =>

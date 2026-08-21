@@ -11,28 +11,31 @@ import {
 import { NavLink } from "react-router-dom";
 
 import { useBeatSyncStore } from "../store/useBeatSyncStore";
+import { translate } from "../i18n";
 
 export default function Sidebar({ onSettings }) {
   const {
     theme,
     setTheme,
+    language,
   } = useBeatSyncStore();
+  const t = (key) => translate(language, key);
 
   const links = [
     [
       "/beat",
       ListChecks,
-      "Beat Generator",
+      t("beatGenerator"),
     ],
     [
       "/dashboard",
       LayoutDashboard,
-      "Live Dashboard",
+      t("liveDashboard"),
     ],
     [
       "/ledger",
       Store,
-      "Store Ledger",
+      t("storeLedger"),
     ],
   ];
 
@@ -103,7 +106,7 @@ export default function Sidebar({ onSettings }) {
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-slate-600 hover:bg-blue-50 dark:text-slate-300 dark:hover:bg-blue-950/30"
         >
           <Settings size={17} />
-          Settings
+          {t("settings")}
         </button>
 
 
@@ -124,9 +127,7 @@ export default function Sidebar({ onSettings }) {
             <Moon size={17} />
           )}
 
-          {theme === "dark"
-            ? "Light theme"
-            : "Dark theme"}
+          {theme === "dark" ? t("lightTheme") : t("darkTheme")}
 
         </button>
 
@@ -146,7 +147,7 @@ export default function Sidebar({ onSettings }) {
               </div>
 
               <div className="text-xs text-slate-500">
-                Owner
+                {t("owner")}
               </div>
 
             </div>

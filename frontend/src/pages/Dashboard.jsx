@@ -14,6 +14,7 @@ import { deliveryBoys} from "../data/mockData";
 import { useBeatSyncStore } from "../store/useBeatSyncStore";
 
 import StatusBadge from "../components/StatusBadge";
+import { translate } from "../i18n";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -27,6 +28,8 @@ export default function Dashboard() {
   const setSelectedStore = useBeatSyncStore(
     (state) => state.setSelectedStore
   );
+  const language = useBeatSyncStore((state) => state.language);
+  const t = (key) => translate(language, key);
 
   const openBoy = (boyId) => {
     setSelectedBoy(boyId);
@@ -69,8 +72,7 @@ export default function Dashboard() {
           </h1> */}
 
           <div className="text-xs font-extrabold uppercase tracking-[0.5em] text-[#000000] dark:text-black-300">
-            Track today's route progress, collections and exceptions
-            in real time.
+            {t("routeProgress")}
           </div>
 
         </div>
@@ -83,7 +85,7 @@ export default function Dashboard() {
 
     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
 
-    Live updates
+    {t("liveUpdates")}
 
   </div>
 
@@ -98,7 +100,7 @@ export default function Dashboard() {
           ? "bg-red-50 border-red-200 text-red-600 dark:bg-red-950/30 dark:border-red-900"
           : "bg-white border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 dark:bg-slate-900 dark:border-slate-800"
       }`}
-      title="Needs Attention"
+      title={t("needsAttention")}
     >
 
       <AlertTriangle size={18} />
@@ -121,11 +123,11 @@ export default function Dashboard() {
           <div>
 
             <div className="font-bold text-sm text-red-700 dark:text-red-300">
-              Needs Attention
+              {t("needsAttention")}
             </div>
 
             <div className="text-[10px] text-slate-500 mt-1">
-              Items requiring immediate attention
+              {t("immediateAttention")}
             </div>
 
           </div>
@@ -144,7 +146,7 @@ export default function Dashboard() {
         <Attention
           initials="V"
           name="Vikram"
-          detail="Cash discrepancy"
+          detail={t("cashDiscrepancy")}
           value="₹1,600"
           danger
           onClick={() => {
@@ -160,7 +162,7 @@ export default function Dashboard() {
         <Attention
           initials="G"
           name="Ganesh Stores"
-          detail="High outstanding"
+          detail={t("highOutstanding")}
           value="₹14,800"
           onClick={() => {
             setAttentionOpen(false);
@@ -185,13 +187,13 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
 
         <Metric
-          label="TOTAL STORES"
+          label={t("totalStores")}
           value="47"
           icon={<CheckCircle2 size={16} />}
         />
 
         <Metric
-          label="COMPLETED"
+          label={t("completed")}
           value="34"
           suffix="72%"
           icon={<CheckCircle2 size={16} />}
@@ -199,14 +201,14 @@ export default function Dashboard() {
         />
 
         <Metric
-          label="CASH COLLECTED"
+          label={t("cashCollected")}
           value="₹32,400"
           icon={<Banknote size={16} />}
           positive
         />
 
         <Metric
-          label="RETURNS"
+          label={t("returns")}
           value="₹5,230"
           icon={<PackageX size={16} />}
           danger
@@ -225,11 +227,11 @@ export default function Dashboard() {
           <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800">
 
             <h2 className="font-bold">
-              Delivery Boys
+              {t("deliveryBoys")}
             </h2>
 
             <p className="text-xs text-slate-500 mt-1">
-              Tap a delivery boy to see their stores.
+              {t("tapDeliveryBoy")}
             </p>
 
           </div>
@@ -244,30 +246,30 @@ export default function Dashboard() {
                 <tr>
 
                   <th className="text-left px-4 py-3">
-                    Boy
+                    {t("boy")}
                   </th>
 
                   <th className="text-left px-4 py-3">
-                    Progress
+                    {t("progress")}
                   </th>
 
                   <th className="text-left px-4 py-3">
-                    Cash Collected
+                    {t("cashCollected")}
                   </th>
 
                   <th className="text-left px-4 py-3">
-                    Returns
+                    {t("returns")}
                   </th>
 
                   <th className="text-left px-4 py-3">
-                    Discrepancy
+                    {t("discrepancy")}
                   </th>
 
                   <th className="text-left px-4 py-3">
-                    Status
+                    {t("currentStatus")}
                   </th>
                   <th className="px-4 py-3 text-left">
-                     Activity
+                     {t("activity")}
                   </th>
 
                   <th></th>
@@ -404,7 +406,7 @@ export default function Dashboard() {
                               <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
 
                               <span className="text-xs font-semibold text-yellow-700 dark:text-yellow-300">
-                                Inactive
+                                {t("inactive")}
                               </span>
                             </div>
                           ) : (
@@ -412,7 +414,7 @@ export default function Dashboard() {
                               <span className="w-2 h-2 rounded-full bg-emerald-500" />
 
                               <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                                Active
+                                {t("active")}
                               </span>
                             </div>
                           )}

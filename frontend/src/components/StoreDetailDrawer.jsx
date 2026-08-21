@@ -10,11 +10,15 @@ import {
 } from "../data/mockData";
 
 import StatusBadge from "./StatusBadge";
+import { useBeatSyncStore } from "../store/useBeatSyncStore";
+import { translate } from "../i18n";
 
 export default function StoreDetailDrawer({
   storeId,
   onClose,
 }) {
+  const language = useBeatSyncStore((state) => state.language);
+  const t = (key) => translate(language, key);
   const store = stores.find(
     (item) => item.id === storeId
   );
@@ -48,7 +52,7 @@ export default function StoreDetailDrawer({
             <div>
 
               <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-[#2563EB] dark:text-blue-300">
-                Store Details
+                {t("storeDetails")}
               </div>
 
               <h2 className="text-xl font-extrabold mt-1">
@@ -89,7 +93,7 @@ export default function StoreDetailDrawer({
           <div className="grid grid-cols-2 gap-3">
 
             <Info
-              label="Assigned Boy"
+              label={t("assignedBoy")}
               value={
                 deliveryBoy?.name ||
                 "Unassigned"
@@ -97,29 +101,29 @@ export default function StoreDetailDrawer({
             />
 
             <Info
-              label="Contact"
+              label={t("contact")}
               value={store.contact || "Not available"}
             />
 
             <Info
-              label="Outstanding"
+              label={t("outstanding")}
               value={`₹${store.outstanding.toLocaleString(
                 "en-IN"
               )}`}
             />
 
             <Info
-              label="Outstanding Age"
+              label={t("outstandingAge")}
               value={`${store.overdue} days`}
             />
 
             <Info
-              label="Last Visited"
+              label={t("lastVisited")}
               value={store.lastVisited || "Not available"}
             />
 
             <Info
-              label="Last Payment"
+              label={t("lastPayment")}
               value={`₹${store.lastPayment.toLocaleString(
                 "en-IN"
               )}`}
@@ -136,7 +140,7 @@ export default function StoreDetailDrawer({
               <div>
 
                 <div className="text-[10px] uppercase tracking-wide text-slate-500">
-                  Current Status
+                  {t("currentStatus")}
                 </div>
 
                 <div className="font-bold mt-1">
@@ -156,7 +160,7 @@ export default function StoreDetailDrawer({
 
               <CheckCircle2 size={14} />
 
-              Integrity verified · tamper-evident ledger
+              {t("integrityVerified")}
 
             </div>
 
@@ -167,7 +171,7 @@ export default function StoreDetailDrawer({
           <section className="glass rounded-[18px] p-5">
 
             <h3 className="font-bold">
-              Store Intelligence
+              {t("storeIntelligence")}
             </h3>
 
             <div className="mt-3 space-y-2">
