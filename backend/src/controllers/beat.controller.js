@@ -151,7 +151,12 @@ async function generateBeat(req, res, next) {
 
       prisma.user.findMany({
         where: {
-          distributorId: req.user.distributorId,
+          memberships: {
+            some: {
+              distributorId: req.user.distributorId,
+              status: "active",
+            },
+          },
           role: "delivery_boy",
           isActive: true,
         },
@@ -442,7 +447,12 @@ async function reassignStore(req, res, next) {
     const deliveryBoy = await prisma.user.findFirst({
       where: {
         id: deliveryBoyId,
-        distributorId: req.user.distributorId,
+        memberships: {
+          some: {
+            distributorId: req.user.distributorId,
+            status: "active",
+          },
+        },
         role: "delivery_boy",
         isActive: true,
       },

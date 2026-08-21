@@ -34,7 +34,7 @@ async function listSkus(req, res, next) {
     const { isActive } = req.query;
 
     const where = {
-      distributorId: req.user.distributorId,
+      distributorId: req.context?.distributorId ?? req.user.distributorId,
       ...(isActive !== undefined ? { isActive: isActive === "true" } : {}),
     };
 
@@ -53,7 +53,7 @@ async function listSkus(req, res, next) {
 async function getSku(req, res, next) {
   try {
     const sku = await prisma.sKU.findFirst({
-      where: { id: req.params.id, distributorId: req.user.distributorId },
+      where: { id: req.params.id, distributorId: req.context?.distributorId ?? req.user.distributorId },
     });
 
     if (!sku) {

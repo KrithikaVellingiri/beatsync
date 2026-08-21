@@ -52,7 +52,7 @@ async function listStores(req, res, next) {
     const { isActive } = req.query;
 
     const where = {
-      distributorId: req.user.distributorId,
+      distributorId: req.context?.distributorId ?? req.user.distributorId,
       ...(isActive !== undefined
         ? { isActive: isActive === "true" }
         : {}),
@@ -83,7 +83,7 @@ async function getStore(req, res, next) {
     const store = await prisma.store.findFirst({
       where: {
         id: Number(req.params.id),
-        distributorId: req.user.distributorId,
+        distributorId: req.context?.distributorId ?? req.user.distributorId,
       },
     });
 
