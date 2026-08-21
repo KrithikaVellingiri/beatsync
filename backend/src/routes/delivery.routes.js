@@ -10,6 +10,8 @@ const {
   updateDeliveryItem,
   removeDeliveryItem,
   addPayment,
+  createRazorpayOrder,
+  verifyRazorpayPayment,
   addReturn,
   addCreditPromise,
   getOwnerContact,
@@ -19,10 +21,12 @@ const {
   authenticate,
   authorize,
 } = require("../middleware/auth.middleware");
+const { resolveDistributorContext } = require("../middleware/distributor-context.middleware");
 
 const router = express.Router();
 
 router.use(authenticate);
+router.use(resolveDistributorContext);
 
 // ---------------------------------------------------------
 // DELIVERY BOY'S BEAT
@@ -128,6 +132,17 @@ router.get(
   "/owner-contact",
   authorize("delivery_boy"),
   getOwnerContact
+);
+router.post(
+  "/visits/:visitId/payment/razorpay/order",
+  authorize("delivery_boy"),
+  createRazorpayOrder
+);
+
+router.post(
+  "/visits/:visitId/payment/razorpay/verify",
+  authorize("delivery_boy"),
+  verifyRazorpayPayment
 );
 
 module.exports = router;

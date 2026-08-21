@@ -1,5 +1,7 @@
 const prisma = require("../lib/prisma");
 const { calculateVisitAmounts } = require("../utils/ledger");
+const razorpay = require("../lib/razorpay");
+const crypto = require("crypto");
 
 // ---------------------------------------------------------
 // GET MY BEAT
@@ -8,7 +10,7 @@ const { calculateVisitAmounts } = require("../utils/ledger");
 async function getMyBeat(req, res, next) {
   try {
     const deliveryBoyId = req.user.id;
-    const distributorId = req.user.distributorId;
+    const distributorId = req.context.distributorId;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -95,7 +97,7 @@ async function getVisitDetails(req, res, next) {
           beatAssignment: {
             deliveryBoyId,
             beat: {
-              distributorId: req.user.distributorId,
+              distributorId: req.context.distributorId,
               status: "published",
             },
           },
@@ -165,6 +167,13 @@ async function getProducts(req, res, next) {
             id: visitId,
             deliveryBoyId,
             status: "in_progress",
+            beatAssignmentStore: {
+              beatAssignment: {
+                beat: {
+                  distributorId: req.context.distributorId,
+                },
+              },
+            },
         },
     });
 
@@ -177,7 +186,7 @@ async function getProducts(req, res, next) {
 
     const products = await prisma.sKU.findMany({
       where: {
-        distributorId: req.user.distributorId,
+        distributorId: req.context.distributorId,
         isActive: true,
       },
       orderBy: {
@@ -228,7 +237,7 @@ async function startVisit(req, res, next) {
           beatAssignment: {
             deliveryBoyId,
             beat: {
-              distributorId: req.user.distributorId,
+              distributorId: req.context.distributorId,
               status: "published",
             },
           },
@@ -287,7 +296,7 @@ async function startVisit(req, res, next) {
 async function addDeliveryItems(req, res, next) {
   try {
     const deliveryBoyId = req.user.id;
-    const distributorId = req.user.distributorId;
+    const distributorId = req.context.distributorId;
     const visitId = Number(req.params.visitId);
 
     const { items } = req.body;
@@ -435,7 +444,7 @@ async function addDeliveryItems(req, res, next) {
 async function updateDeliveryItem(req, res, next) {
   try {
     const deliveryBoyId = req.user.id;
-    const distributorId = req.user.distributorId;
+    const distributorId = req.context.distributorId;
 
     const visitId = Number(req.params.visitId);
     const skuId = Number(req.params.skuId);
@@ -554,7 +563,7 @@ async function updateDeliveryItem(req, res, next) {
 async function removeDeliveryItem(req, res, next) {
   try {
     const deliveryBoyId = req.user.id;
-    const distributorId = req.user.distributorId;
+    const distributorId = req.context.distributorId;
 
     const visitId = Number(req.params.visitId);
     const skuId = Number(req.params.skuId);
@@ -659,12 +668,10 @@ async function addPayment(req, res, next) {
       });
     }
 
-    const validMethods = ["cash", "upi"];
-
-    if (!validMethods.includes(method)) {
+    if (method !== "cash") {
       return res.status(400).json({
         success: false,
-        message: "Payment method must be cash or upi",
+        message: "Use the Razorpay payment flow for UPI",
       });
     }
 
@@ -673,6 +680,13 @@ async function addPayment(req, res, next) {
         id: visitId,
         deliveryBoyId,
         status: "in_progress",
+        beatAssignmentStore: {
+          beatAssignment: {
+            beat: {
+              distributorId: req.context.distributorId,
+            },
+          },
+        },
       },
     });
 
@@ -683,28 +697,29 @@ async function addPayment(req, res, next) {
       });
     }
 
-    const payment =
-      await prisma.payment.create({
-        data: {
-          storeVisitId: visitId,
-          deliveryBoyId,
-          amount: numericAmount,
-          method,
-          reference: reference || undefined,
-        },
-      });
+    const payment = await prisma.payment.create({
+      data: {
+        storeVisitId: visitId,
+        deliveryBoyId,
+        amount: numericAmount,
+        method: "cash",
+        reference: reference || undefined,
+      },
+    });
+
     const io = req.app.get("io");
-    if (io) {
-        io.to(`distributor:${req.user.distributorId}`)
-            .emit("payment:recorded", {
-            visitId,
-            payment,
+
+    if (io && req.context.distributorId) {
+      io.to(`distributor:${req.context.distributorId}`)
+        .emit("payment:recorded", {
+          visitId,
+          payment,
         });
     }
 
     return res.status(201).json({
       success: true,
-      message: "Payment recorded",
+      message: "Cash payment recorded",
       data: {
         payment,
       },
@@ -713,6 +728,321 @@ async function addPayment(req, res, next) {
     next(err);
   }
 }
+
+async function createRazorpayOrder(req, res, next) {
+  try {
+    const deliveryBoyId = req.user.id;
+    const visitId = Number(req.params.visitId);
+    const amount = Number(req.body.amount);
+
+    if (!Number.isInteger(visitId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid visit ID",
+      });
+    }
+
+    const amountInPaise = Math.round(amount * 100);
+
+    if (!Number.isFinite(amount) || amount <= 0 || amountInPaise <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Amount must be greater than 0",
+      });
+    }
+
+    const visit = await prisma.storeVisit.findFirst({
+      where: {
+        id: visitId,
+        deliveryBoyId,
+        status: "in_progress",
+        beatAssignmentStore: {
+          beatAssignment: {
+            beat: {
+              distributorId: req.context.distributorId,
+            },
+          },
+        },
+      },
+      include: {
+        deliveryItems: { include: { sku: true } },
+        returnItems: { include: { sku: true } },
+        payments: {
+          where: { status: "captured" },
+        },
+        creditPromise: true,
+      },
+    });
+
+    if (!visit) {
+      return res.status(404).json({
+        success: false,
+        message: "Active visit not found",
+      });
+    }
+
+    const amounts = calculateVisitAmounts(visit);
+    const outstandingInPaise = Math.max(
+      0,
+      Math.round((amounts.expectedCollection - amounts.paymentAmount) * 100)
+    );
+
+    if (amountInPaise > outstandingInPaise) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment amount exceeds the visit outstanding amount",
+      });
+    }
+
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      return res.status(503).json({
+        success: false,
+        message: "Razorpay is not configured",
+      });
+    }
+
+    const order = await razorpay.orders.create({
+      amount: amountInPaise,
+      currency: "INR",
+      receipt: `visit_${visitId}_${Date.now()}`,
+      notes: {
+        visitId: String(visitId),
+        deliveryBoyId: String(deliveryBoyId),
+      },
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Razorpay order created",
+      data: {
+        orderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        keyId: process.env.RAZORPAY_KEY_ID,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+async function verifyRazorpayPayment(req, res, next) {
+  try {
+    const deliveryBoyId = req.user.id;
+    const visitId = Number(req.params.visitId);
+
+    const razorpayOrderId =
+      req.body.razorpay_order_id || req.body.razorpayOrderId;
+    const razorpayPaymentId =
+      req.body.razorpay_payment_id || req.body.razorpayPaymentId;
+    const razorpaySignature =
+      req.body.razorpay_signature || req.body.razorpaySignature;
+
+    if (!Number.isInteger(visitId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid visit ID",
+      });
+    }
+
+    if (
+      typeof razorpayOrderId !== "string" ||
+      typeof razorpayPaymentId !== "string" ||
+      typeof razorpaySignature !== "string" ||
+      !razorpayOrderId ||
+      !razorpayPaymentId ||
+      !razorpaySignature
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "razorpayOrderId, razorpayPaymentId and razorpaySignature are required",
+      });
+    }
+
+    const visit = await prisma.storeVisit.findFirst({
+      where: {
+        id: visitId,
+        deliveryBoyId,
+        status: "in_progress",
+        beatAssignmentStore: {
+          beatAssignment: {
+            beat: {
+              distributorId: req.context.distributorId,
+            },
+          },
+        },
+      },
+      include: {
+        deliveryItems: { include: { sku: true } },
+        returnItems: { include: { sku: true } },
+        payments: true,
+        creditPromise: true,
+      },
+    });
+
+    if (!visit) {
+      return res.status(404).json({
+        success: false,
+        message: "Active visit not found",
+      });
+    }
+
+    if (!process.env.RAZORPAY_KEY_SECRET) {
+      return res.status(503).json({
+        success: false,
+        message: "Razorpay is not configured",
+      });
+    }
+
+    const generatedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+      .digest("hex");
+
+    const expectedSignature = Buffer.from(generatedSignature, "utf8");
+    const providedSignature = Buffer.from(razorpaySignature, "utf8");
+    const isValid =
+      expectedSignature.length === providedSignature.length &&
+      crypto.timingSafeEqual(expectedSignature, providedSignature);
+
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Razorpay payment signature",
+      });
+    }
+
+    /*
+     * IMPORTANT:
+     * At this point Razorpay has authenticated
+     * the payment response.
+     *
+     * We now need the actual order amount before
+     * creating our Payment record.
+     */
+
+    const order = await razorpay.orders.fetch(razorpayOrderId);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Razorpay order not found",
+      });
+    }
+
+    if (
+      order.id !== razorpayOrderId ||
+      order.status !== "paid" ||
+      order.currency !== "INR" ||
+      order.notes?.visitId !== String(visitId) ||
+      order.notes?.deliveryBoyId !== String(deliveryBoyId)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Razorpay order does not belong to this visit",
+      });
+    }
+
+    const paymentDetails = await razorpay.payments.fetch(
+      razorpayPaymentId
+    );
+
+    if (
+      !paymentDetails ||
+      paymentDetails.id !== razorpayPaymentId ||
+      paymentDetails.order_id !== razorpayOrderId ||
+      paymentDetails.status !== "captured" ||
+      paymentDetails.currency !== "INR" ||
+      paymentDetails.amount !== order.amount
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Razorpay payment is not a captured payment for this order",
+      });
+    }
+
+    const amounts = calculateVisitAmounts(visit);
+    const outstandingInPaise = Math.max(
+      0,
+      Math.round((amounts.expectedCollection - amounts.paymentAmount) * 100)
+    );
+
+    if (order.amount > outstandingInPaise) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment amount exceeds the visit outstanding amount",
+      });
+    }
+
+    const existingPayment = await prisma.payment.findFirst({
+      where: {
+        OR: [
+          { razorpayOrderId },
+          { razorpayPaymentId },
+        ],
+      },
+    });
+
+    if (existingPayment) {
+      return res.status(409).json({
+        success: false,
+        message: "This Razorpay payment has already been recorded",
+      });
+    }
+
+    let payment;
+
+    try {
+      payment = await prisma.payment.create({
+        data: {
+          storeVisitId: visitId,
+          deliveryBoyId,
+          amount: order.amount / 100,
+          method: "upi",
+          status: "captured",
+          reference: razorpayPaymentId,
+          razorpayOrderId,
+          razorpayPaymentId,
+          razorpaySignature,
+        },
+      });
+    } catch (error) {
+      if (error.code === "P2002") {
+        return res.status(409).json({
+          success: false,
+          message: "This Razorpay payment has already been recorded",
+        });
+      }
+
+      throw error;
+    }
+
+    const io = req.app.get("io");
+
+    if (io && req.context.distributorId) {
+      io.to(`distributor:${req.context.distributorId}`)
+        .emit("payment:recorded", {
+          visitId,
+          payment,
+        });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "UPI payment verified and recorded",
+      data: {
+        payment,
+        razorpay: {
+          orderId: razorpayOrderId,
+          paymentId: razorpayPaymentId,
+        },
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 
 // ---------------------------------------------------------
 // RECORD RETURN
@@ -766,6 +1096,13 @@ async function addReturn(req, res, next) {
         id: visitId,
         deliveryBoyId,
         status: "in_progress",
+        beatAssignmentStore: {
+          beatAssignment: {
+            beat: {
+              distributorId: req.context.distributorId,
+            },
+          },
+        },
       },
     });
 
@@ -779,7 +1116,7 @@ async function addReturn(req, res, next) {
     const sku = await prisma.sKU.findFirst({
       where: {
         id: numericSkuId,
-        distributorId: req.user.distributorId,
+        distributorId: req.context.distributorId,
         isActive: true,
       },
     });
@@ -806,7 +1143,7 @@ async function addReturn(req, res, next) {
     const io = req.app.get("io");
 
     if (io) {
-        io.to(`distributor:${req.user.distributorId}`)
+        io.to(`distributor:${req.context.distributorId}`)
         .emit("return:recorded", {
         visitId,
         returnItem,
@@ -884,6 +1221,13 @@ async function addCreditPromise(req, res, next) {
         id: visitId,
         deliveryBoyId,
         status: "in_progress",
+        beatAssignmentStore: {
+          beatAssignment: {
+            beat: {
+              distributorId: req.context.distributorId,
+            },
+          },
+        },
       },
     });
 
@@ -929,7 +1273,7 @@ async function addCreditPromise(req, res, next) {
     const io = req.app.get("io");
 
     if (io) {
-        io.to(`distributor:${req.user.distributorId}`)
+        io.to(`distributor:${req.context.distributorId}`)
         .emit("credit:recorded", {
         visitId,
         creditPromise,
@@ -955,7 +1299,7 @@ async function addCreditPromise(req, res, next) {
 async function completeVisit(req, res, next) {
   try {
     const deliveryBoyId = req.user.id;
-    const distributorId = req.user.distributorId;
+    const distributorId = req.context.distributorId;
     const visitId = Number(req.params.visitId);
 
     if (!Number.isInteger(visitId)) {
@@ -1006,66 +1350,54 @@ async function completeVisit(req, res, next) {
       });
     }
 
-    const amounts = calculateVisitAmounts(visit);
-
-    const completedVisit = await prisma.$transaction(
+    const completion = await prisma.$transaction(
       async (tx) => {
-        const store = await tx.store.findUnique({
+        const claimedVisit = await tx.storeVisit.updateMany({
           where: {
-            id: visit.storeId,
+            id: visitId,
+            deliveryBoyId,
+            status: "in_progress",
+            beatAssignmentStore: {
+              beatAssignment: {
+                beat: { distributorId },
+              },
+            },
           },
+          data: {
+            status: "completed",
+            completedAt: new Date(),
+          },
+        });
+
+        if (claimedVisit.count !== 1) {
+          return null;
+        }
+
+        const completedVisit = await tx.storeVisit.findUnique({
+          where: { id: visitId },
+          include: {
+            deliveryItems: { include: { sku: true } },
+            payments: { where: { status: "captured" } },
+            returnItems: { include: { sku: true } },
+            creditPromise: true,
+          },
+        });
+
+        const store = await tx.store.findUnique({
+          where: { id: completedVisit.storeId },
         });
 
         if (!store) {
           throw new Error("Store not found");
         }
 
-        const previousBalance =
-          Number(store.outstandingBalance);
-
-        /*
-         * New outstanding:
-         *
-         * previous outstanding
-         * + today's net sales
-         * - today's payments
-         *
-         * Credit remains outstanding, so it is NOT subtracted.
-         */
+        const amounts = calculateVisitAmounts(completedVisit);
+        const previousBalance = Number(store.outstandingBalance);
         const newBalance =
-          previousBalance +
-          amounts.netSales -
-          amounts.paymentAmount;
-
-        const updatedVisit =
-          await tx.storeVisit.update({
-            where: {
-              id: visitId,
-            },
-            data: {
-              status: "completed",
-              completedAt: new Date(),
-            },
-            include: {
-              deliveryItems: {
-                include: {
-                  sku: true,
-                },
-              },
-              payments: true,
-              returnItems: {
-                include: {
-                  sku: true,
-                },
-              },
-              creditPromise: true,
-            },
-          });
+          previousBalance + amounts.netSales - amounts.paymentAmount;
 
         await tx.store.update({
-          where: {
-            id: visit.storeId,
-          },
+          where: { id: completedVisit.storeId },
           data: {
             outstandingBalance: newBalance,
             lastVisitedAt: new Date(),
@@ -1074,23 +1406,36 @@ async function completeVisit(req, res, next) {
 
         await tx.storeLedgerEntry.create({
           data: {
-            storeId: visit.storeId,
+            storeId: completedVisit.storeId,
             storeVisitId: visitId,
-
             previousBalance,
-
             salesAmount: amounts.salesAmount,
             returnAmount: amounts.returnAmount,
             paymentAmount: amounts.paymentAmount,
             creditAmount: amounts.creditAmount,
-
             newBalance,
           },
         });
 
-        return updatedVisit;
-      }
+        return {
+          visit: completedVisit,
+          amounts,
+          previousBalance,
+          newBalance,
+        };
+      },
+      { isolationLevel: "Serializable" }
     );
+
+    if (!completion) {
+      return res.status(409).json({
+        success: false,
+        message: "Visit is already completed or no longer active",
+      });
+    }
+
+    const { visit: completedVisit, amounts, previousBalance, newBalance } =
+      completion;
 
     const io = req.app.get("io");
 
@@ -1113,17 +1458,8 @@ async function completeVisit(req, res, next) {
         visit: completedVisit,
         summary: {
           ...amounts,
-          previousBalance: Number(
-            visit.beatAssignmentStore.store
-              .outstandingBalance
-          ),
-          newBalance:
-            Number(
-              visit.beatAssignmentStore.store
-                .outstandingBalance
-            ) +
-            amounts.netSales -
-            amounts.paymentAmount,
+          previousBalance,
+          newBalance,
         },
       },
     });
@@ -1137,7 +1473,7 @@ async function completeVisit(req, res, next) {
 
 async function getOwnerContact(req, res, next) {
   try {
-    const distributorId = req.user.distributorId;
+    const distributorId = req.context.distributorId;
 
     const distributor = await prisma.distributor.findUnique({
       where: {
@@ -1183,6 +1519,8 @@ module.exports = {
   updateDeliveryItem,
   removeDeliveryItem,
   addPayment,
+  createRazorpayOrder,
+  verifyRazorpayPayment,
   addReturn,
   addCreditPromise,
   completeVisit,

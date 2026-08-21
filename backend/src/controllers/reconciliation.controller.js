@@ -19,7 +19,9 @@ function calculateVisit(visit) {
   }
 
   for (const payment of visit.payments) {
-    payments += Number(payment.amount);
+    if (payment.status === "captured") {
+      payments += Number(payment.amount);
+    }
   }
 
   if (visit.creditPromise) {
@@ -114,7 +116,9 @@ async function getReconciliation(req, res, next) {
                     },
                   },
 
-                  payments: true,
+                  payments: {
+                    where: { status: "captured" },
+                  },
 
                   creditPromise: true,
                 },

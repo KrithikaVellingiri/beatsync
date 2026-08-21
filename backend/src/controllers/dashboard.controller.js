@@ -66,7 +66,9 @@ async function getOwnerDashboard(req, res, next) {
                         sku: true,
                       },
                     },
-                    payments: true,
+                    payments: {
+                      where: { status: "captured" },
+                    },
                     creditPromise: true,
                   },
                 },

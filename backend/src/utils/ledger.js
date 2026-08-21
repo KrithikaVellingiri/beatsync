@@ -13,7 +13,9 @@ function calculateVisitAmounts(visit) {
   }
 
   for (const payment of visit.payments || []) {
-    paymentAmount += Number(payment.amount);
+    if (payment.status === "captured") {
+      paymentAmount += Number(payment.amount);
+    }
   }
 
   if (visit.creditPromise) {

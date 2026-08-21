@@ -1,10 +1,27 @@
 const bcrypt = require("bcrypt");
+const { randomInt } = require("crypto");
 
 const prisma = require("../lib/prisma");
 const { signToken } = require("../utils/jwt");
 const { sanitizeUser } = require("../utils/sanitize");
 
 const SALT_ROUNDS = 10;
+
+async function createDistributorCode(name, client = prisma) {
+  const prefix = (name || "TEAM")
+    .replace(/[^a-z0-9]/gi, "")
+    .slice(0, 5)
+    .toUpperCase()
+    .padEnd(4, "X");
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const code = `${prefix}${randomInt(10, 100)}`;
+    const existing = await client.distributor.findUnique({ where: { code } });
+    if (!existing) return code;
+  }
+
+  throw new Error("Unable to generate a unique distributor code");
+}
 
 // POST /api/auth/register-owner
 async function registerOwner(req, res, next) {
@@ -49,6 +66,7 @@ async function registerOwner(req, res, next) {
       const distributor = await tx.distributor.create({
         data: {
           name: distributorName,
+          code: await createDistributorCode(distributorName, tx),
           phone,
           email: email || null,
         },
@@ -131,7 +149,7 @@ async function registerDeliveryBoy(req, res, next) {
 
     const user = await prisma.user.create({
       data: {
-        distributorId: req.user.distributorId,
+        distributorId: null,
         name,
         phone,
         email: email || null,
@@ -144,6 +162,11 @@ async function registerDeliveryBoy(req, res, next) {
       success: true,
       message: "Delivery boy account created",
       data: {
+        token: signToken({
+          userId: user.id,
+          distributorId: null,
+          role: user.role,
+        }),
         user: sanitizeUser(user),
       },
     });

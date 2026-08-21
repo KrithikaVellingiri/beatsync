@@ -16,6 +16,11 @@ enum UserRole {
   delivery_boy
 }
 
+enum DistributorMemberStatus {
+  active
+  inactive
+}
+
 enum BeatStatus {
   draft
   published
@@ -40,6 +45,12 @@ enum PaymentMethod {
   upi
 }
 
+enum PaymentStatus {
+  captured
+  failed
+  refunded
+}
+
 enum CreditPromiseStatus {
   pending
   fulfilled
@@ -49,6 +60,7 @@ enum CreditPromiseStatus {
 model Distributor {
   id        Int      @id @default(autoincrement())
   name      String
+  code      String   @unique
   phone     String?
   email     String?
   createdAt DateTime @default(now())
@@ -58,13 +70,14 @@ model Distributor {
   stores Store[]
   skus   SKU[]
   beats  Beat[]
+  members DistributorMember[]
 
   @@map("distributors")
 }
 
 model User {
   id            Int      @id @default(autoincrement())
-  distributorId Int
+  distributorId Int?
   name          String
   phone         String   @unique
   email         String?
@@ -74,7 +87,8 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  distributor     Distributor      @relation(fields: [distributorId], references: [id], onDelete: Cascade)
+  distributor     Distributor?     @relation(fields: [distributorId], references: [id], onDelete: Cascade)
+  memberships     DistributorMember[]
   beatAssignments BeatAssignment[]
   storeVisits     StoreVisit[]
   payments        Payment[]
@@ -82,6 +96,24 @@ model User {
   @@index([distributorId])
   @@index([role])
   @@map("users")
+}
+
+model DistributorMember {
+  id            Int                    @id @default(autoincrement())
+  userId        Int
+  distributorId Int
+  status        DistributorMemberStatus @default(active)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  distributor Distributor @relation(fields: [distributorId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, distributorId])
+  @@index([userId])
+  @@index([distributorId])
+  @@index([status])
+  @@map("distributor_members")
 }
 
 model Store {
@@ -267,9 +299,14 @@ model Payment {
   deliveryBoyId Int
 
   method PaymentMethod
-  amount Decimal       @db.Decimal(10, 2)
+  amount Decimal @db.Decimal(10, 2)
+  status PaymentStatus @default(captured)
 
   reference String?
+
+  razorpayOrderId   String? @unique
+  razorpayPaymentId String? @unique
+  razorpaySignature String?
 
   createdAt DateTime @default(now())
 
@@ -280,6 +317,8 @@ model Payment {
   @@index([storeVisitId])
   @@index([deliveryBoyId])
   @@index([method])
+  @@index([razorpayOrderId])
+  @@index([razorpayPaymentId])
 }
 
 model CreditPromise {

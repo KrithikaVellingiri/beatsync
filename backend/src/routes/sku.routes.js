@@ -7,6 +7,7 @@ const {
   deleteSku,
 } = require("../controllers/sku.controller");
 const { authenticate, authorize } = require("../middleware/auth.middleware");
+const { resolveDistributorContext } = require("../middleware/distributor-context.middleware");
 
 const router = express.Router();
 
@@ -14,8 +15,8 @@ const router = express.Router();
 router.use(authenticate);
 
 // Both owner and delivery_boy can view the product catalog
-router.get("/", listSkus);
-router.get("/:id", getSku);
+router.get("/", resolveDistributorContext, listSkus);
+router.get("/:id", resolveDistributorContext, getSku);
 
 // Only owners can manage the product catalog
 router.post("/", authorize("owner"), createSku);

@@ -10,6 +10,7 @@ const deliveryRoutes = require("./routes/delivery.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const ledgerRoutes = require("./routes/ledger.routes");
 const reconciliationRoutes = require("./routes/reconciliation.routes");
+const teamRoutes = require("./routes/team.routes");
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use("/api/delivery", deliveryRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/ledger", ledgerRoutes);
 app.use("/api/reconciliation",reconciliationRoutes);
+app.use("/api/team", teamRoutes);
 
 
 app.get("/", (req, res) => {
