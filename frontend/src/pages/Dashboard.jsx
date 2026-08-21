@@ -71,7 +71,7 @@ export default function Dashboard() {
             Live Operations
           </h1> */}
 
-          <div className="text-xs font-extrabold uppercase tracking-[0.5em] text-[#000000] dark:text-black-300">
+          <div className="text-xs font-extrabold uppercase tracking-[0.5em] text-[#000000] dark:text-blue-300">
             {t("routeProgress")}
           </div>
 

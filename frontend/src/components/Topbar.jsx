@@ -2,7 +2,6 @@ import { useState } from "react";
 
 
 import {
-  Bell,
   Bot,
   Building2,
   Menu,
@@ -103,15 +102,6 @@ export default function Topbar({ onAsk }) {
           )}
 
         </div>
-
-
-        <button className="relative p-2 rounded-lg hover:bg-white/10">
-
-          <Bell size={18} />
-
-          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-400 border-2 border-[#2563eb]" />
-
-        </button>
 
 
         <div className="relative">
