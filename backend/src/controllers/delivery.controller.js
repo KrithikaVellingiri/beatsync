@@ -1,4 +1,5 @@
 const prisma = require("../lib/prisma");
+const { calculateVisitAmounts } = require("../utils/ledger");
 
 // ---------------------------------------------------------
 // GET MY BEAT
@@ -692,6 +693,14 @@ async function addPayment(req, res, next) {
           reference: reference || undefined,
         },
       });
+    const io = req.app.get("io");
+    if (io) {
+        io.to(`distributor:${req.user.distributorId}`)
+            .emit("payment:recorded", {
+            visitId,
+            payment,
+        });
+    }
 
     return res.status(201).json({
       success: true,
@@ -794,6 +803,15 @@ async function addReturn(req, res, next) {
           sku: true,
         },
       });
+    const io = req.app.get("io");
+
+    if (io) {
+        io.to(`distributor:${req.user.distributorId}`)
+        .emit("return:recorded", {
+        visitId,
+        returnItem,
+        });
+    }
 
     return res.status(201).json({
       success: true,
@@ -908,6 +926,15 @@ async function addCreditPromise(req, res, next) {
           },
         });
     }
+    const io = req.app.get("io");
+
+    if (io) {
+        io.to(`distributor:${req.user.distributorId}`)
+        .emit("credit:recorded", {
+        visitId,
+        creditPromise,
+        });
+    }
 
     return res.status(201).json({
       success: true,
@@ -928,6 +955,7 @@ async function addCreditPromise(req, res, next) {
 async function completeVisit(req, res, next) {
   try {
     const deliveryBoyId = req.user.id;
+    const distributorId = req.user.distributorId;
     const visitId = Number(req.params.visitId);
 
     if (!Number.isInteger(visitId)) {
@@ -941,6 +969,14 @@ async function completeVisit(req, res, next) {
       where: {
         id: visitId,
         deliveryBoyId,
+        status: "in_progress",
+        beatAssignmentStore: {
+          beatAssignment: {
+            beat: {
+              distributorId,
+            },
+          },
+        },
       },
       include: {
         beatAssignmentStore: {
@@ -954,7 +990,11 @@ async function completeVisit(req, res, next) {
           },
         },
         payments: true,
-        returnItems: true,
+        returnItems: {
+          include: {
+            sku: true,
+          },
+        },
         creditPromise: true,
       },
     });
@@ -962,63 +1002,129 @@ async function completeVisit(req, res, next) {
     if (!visit) {
       return res.status(404).json({
         success: false,
-        message: "Visit not found",
+        message: "Active visit not found",
       });
     }
 
-    if (visit.status === "completed") {
-      return res.status(400).json({
-        success: false,
-        message: "Visit is already completed",
-      });
-    }
+    const amounts = calculateVisitAmounts(visit);
 
-    const completedVisit =
-      await prisma.$transaction(
-        async (tx) => {
-          const updatedVisit =
-            await tx.storeVisit.update({
-              where: {
-                id: visitId,
-              },
-              data: {
-                status: "completed",
-                completedAt: new Date(),
-              },
-              include: {
-                deliveryItems: {
-                  include: {
-                    sku: true,
-                  },
-                },
-                payments: true,
-                returnItems: {
-                  include: {
-                    sku: true,
-                  },
-                },
-                creditPromise: true,
-              },
-            });
+    const completedVisit = await prisma.$transaction(
+      async (tx) => {
+        const store = await tx.store.findUnique({
+          where: {
+            id: visit.storeId,
+          },
+        });
 
-          await tx.store.update({
+        if (!store) {
+          throw new Error("Store not found");
+        }
+
+        const previousBalance =
+          Number(store.outstandingBalance);
+
+        /*
+         * New outstanding:
+         *
+         * previous outstanding
+         * + today's net sales
+         * - today's payments
+         *
+         * Credit remains outstanding, so it is NOT subtracted.
+         */
+        const newBalance =
+          previousBalance +
+          amounts.netSales -
+          amounts.paymentAmount;
+
+        const updatedVisit =
+          await tx.storeVisit.update({
             where: {
-              id: visit.beatAssignmentStore.storeId,
+              id: visitId,
             },
             data: {
-              lastVisitedAt: new Date(),
+              status: "completed",
+              completedAt: new Date(),
+            },
+            include: {
+              deliveryItems: {
+                include: {
+                  sku: true,
+                },
+              },
+              payments: true,
+              returnItems: {
+                include: {
+                  sku: true,
+                },
+              },
+              creditPromise: true,
             },
           });
 
-          return updatedVisit;
+        await tx.store.update({
+          where: {
+            id: visit.storeId,
+          },
+          data: {
+            outstandingBalance: newBalance,
+            lastVisitedAt: new Date(),
+          },
+        });
+
+        await tx.storeLedgerEntry.create({
+          data: {
+            storeId: visit.storeId,
+            storeVisitId: visitId,
+
+            previousBalance,
+
+            salesAmount: amounts.salesAmount,
+            returnAmount: amounts.returnAmount,
+            paymentAmount: amounts.paymentAmount,
+            creditAmount: amounts.creditAmount,
+
+            newBalance,
+          },
+        });
+
+        return updatedVisit;
+      }
+    );
+
+    const io = req.app.get("io");
+
+    if (io) {
+      io.to(`distributor:${distributorId}`).emit(
+        "visit:completed",
+        {
+          visitId,
+          storeId: visit.storeId,
+          deliveryBoyId,
+          amounts,
         }
       );
+    }
 
     return res.status(200).json({
       success: true,
       message: "Store visit completed",
       data: {
         visit: completedVisit,
+        summary: {
+          ...amounts,
+          previousBalance: Number(
+            visit.beatAssignmentStore.store
+              .outstandingBalance
+          ),
+          newBalance:
+            Number(
+              visit.beatAssignmentStore.store
+                .outstandingBalance
+            ) +
+            amounts.netSales -
+            amounts.paymentAmount,
+        },
       },
     });
   } catch (err) {

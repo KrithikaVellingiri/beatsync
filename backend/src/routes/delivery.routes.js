@@ -3,6 +3,7 @@ const express = require("express");
 const {
   getMyBeat,
   getVisitDetails,
+  getProducts,
   startVisit,
   completeVisit,
   addDeliveryItems,
