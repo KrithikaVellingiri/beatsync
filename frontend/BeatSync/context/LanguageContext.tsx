@@ -23,6 +23,9 @@ const translations = {
     beat: "Beat",
     stores: "Stores",
     day: "Day",
+    welcomeTagline: "Makes life easier",
+  exclusiveTitle: "EXCLUSIVELY FOR DELIVERY PERSONNEL",
+  exclusiveDesc: "Specifically for our delivery partners",
   },
   ta: {
     goodMorning: "காலை வணக்கம்,",
@@ -42,6 +45,9 @@ const translations = {
     beat: "பயணம்",
     stores: "கடைகள்",
     day: "நாள்",
+    welcomeTagline: "வாழ்க்கையை எளிதாக்குகிறது",
+  exclusiveTitle: "டெலிவரி பணியாளர்களுக்கு மட்டும்",
+  exclusiveDesc: "எங்கள் டெலிவரி பார்ட்னர்களுக்காக மட்டுமே",
   },
 };
 

@@ -1,131 +1,928 @@
-// app/store/[id]/index.tsx
+import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+
 import { useBeat } from "../../../context/BeatContext";
 import { useLanguage } from "../../../context/LanguageContext";
 import { useTheme } from "../../../context/ThemeContext";
 
-export default function CreditGate() {
+export default function StoreDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
+
   const { colors } = useTheme();
   const { lang } = useLanguage();
   const { getStore } = useBeat();
+
   const store = getStore(id);
 
   if (!store) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.bg }]}>
-        <Text style={{ color: colors.text }}>Store not found</Text>
+      <View
+        style={[
+          styles.center,
+          { backgroundColor: colors.bg },
+        ]}
+      >
+        <Ionicons
+          name="storefront-outline"
+          size={42}
+          color={colors.textSecondary}
+        />
+
+        <Text
+          style={[
+            styles.notFoundTitle,
+            { color: colors.text },
+          ]}
+        >
+          {lang === "en"
+            ? "Store not found"
+            : "கடை கிடைக்கவில்லை"}
+        </Text>
+
+        <Pressable
+          onPress={() => router.back()}
+          style={[
+            styles.backButton,
+            { borderColor: colors.border },
+          ]}
+        >
+          <Text
+            style={[
+              styles.backButtonText,
+              { color: colors.primary },
+            ]}
+          >
+            {lang === "en" ? "Go Back" : "பின் செல்க"}
+          </Text>
+        </Pressable>
       </View>
     );
   }
 
   const isCritical = store.status === "critical";
+  const isClear = store.outstanding === 0;
+  const isCompleted = store.done;
+
+  const statusColor = isCritical
+    ? colors.critical
+    : isClear
+      ? colors.success
+      : colors.accent;
+
+  const statusBackground = isCritical
+    ? colors.criticalBg
+    : isClear
+      ? colors.successBg
+      : `${colors.accent}18`;
+
+  const statusTitle = isCritical
+    ? lang === "en"
+      ? "Critical Account"
+      : "முக்கிய கணக்கு"
+    : isClear
+      ? lang === "en"
+        ? "Account Clear"
+        : "கணக்கு தெளிவானது"
+      : lang === "en"
+        ? "Outstanding Payment"
+        : "நிலுவைத் தொகை";
+
+  const statusDescription = isCritical
+    ? lang === "en"
+      ? "Owner approval is required before delivery."
+      : "விநியோகத்திற்கு முன் உரிமையாளர் ஒப்புதல் தேவை."
+    : isClear
+      ? lang === "en"
+        ? "No outstanding payment is pending."
+        : "நிலுவைத் தொகை எதுவும் இல்லை."
+      : lang === "en"
+        ? "Payment is currently outstanding for this store."
+        : "இந்த கடைக்கான பணம் தற்போது நிலுவையில் உள்ளது.";
+
+  const handleCallOwner = () => {
+    if (store.phone) {
+      Linking.openURL(`tel:${store.phone}`);
+    }
+  };
+
+  const handleStartVisit = () => {
+    router.push(`/store/${store.id}/delivery`);
+  };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={styles.container}>
-      <View style={styles.headerRow}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={{ color: colors.primary, fontSize: 15, fontWeight: "600" }}>← Back</Text>
-        </Pressable>
-        <Pressable onPress={() => Linking.openURL(`tel:${store.phone}`)}>
-          <Text style={{ fontSize: 20 }}>📞</Text>
-        </Pressable>
-      </View>
+    <View
+      style={[
+        styles.screen,
+        { backgroundColor: colors.bg },
+      ]}
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.container}
+      >
+        {/* HEADER */}
+        {/* HEADER */}
+<View style={styles.header}>
+  {/* BACK */}
+  <Pressable
+    onPress={() => router.back()}
+    hitSlop={10}
+    style={styles.headerBack}
+  >
+    <Ionicons
+      name="arrow-back"
+      size={22}
+      color={colors.text}
+    />
+  </Pressable>
 
-      <Text style={[styles.storeName, { color: colors.text }]}>{store.name}</Text>
-      <Text style={[styles.storeArea, { color: colors.textSecondary }]}>{store.area}</Text>
+  {/* CALL STORE OWNER */}
+  <Pressable
+    onPress={handleCallOwner}
+    hitSlop={10}
+    style={[
+      styles.headerIconButton,
+      {
+        backgroundColor: colors.surface,
+        borderColor: colors.border,
+      },
+    ]}
+  >
+    <Ionicons
+      name="call-outline"
+      size={19}
+      color={colors.primary}
+    />
+  </Pressable>
+</View>
 
-      {isCritical ? (
-        <View style={[styles.warningCard, { backgroundColor: colors.criticalBg, borderColor: colors.critical }]}>
-          <Text style={[styles.warningLabel, { color: colors.critical }]}>⚠ CRITICAL</Text>
-          <Text style={[styles.warningAmount, { color: colors.critical }]}>
-            ₹{store.outstanding.toLocaleString("en-IN")} outstanding
+        {/* STORE HEADER */}
+        <View style={styles.storeHeader}>
+          <Text
+            style={[
+              styles.storeName,
+              { color: colors.text },
+            ]}
+          >
+            {store.name}
           </Text>
-          <Text style={[styles.warningSub, { color: colors.critical }]}>
-            {store.daysOverdue} days overdue
-          </Text>
-          <Text style={[styles.warningNote, { color: colors.critical }]}>
-            {lang === "en" ? "Do not deliver without owner approval." : "உரிமையாளர் ஒப்புதல் இல்லாமல் விநியோகிக்க வேண்டாம்."}
-          </Text>
+
+          <View style={styles.locationRow}>
+            <Ionicons
+              name="location-outline"
+              size={16}
+              color={colors.textSecondary}
+            />
+
+            <Text
+              style={[
+                styles.locationText,
+                { color: colors.textSecondary },
+              ]}
+            >
+              {store.area}
+            </Text>
+          </View>
         </View>
-      ) : (
-        <View style={[styles.infoCard, { backgroundColor: colors.successBg, borderColor: colors.success }]}>
-          <Text style={[styles.infoLabel, { color: colors.success }]}>
-            {store.outstanding === 0
-              ? lang === "en" ? "Account Clear" : "கணக்கு தெளிவானது"
-              : lang === "en" ? "Outstanding" : "நிலுவை"}
+
+        {/* ACCOUNT STATUS */}
+        <View
+          style={[
+            styles.statusCard,
+            {
+              backgroundColor: statusBackground,
+              borderColor: statusColor,
+            },
+          ]}
+        >
+          <View style={styles.statusTopRow}>
+            <View
+              style={[
+                styles.statusIcon,
+                {
+                  backgroundColor: `${statusColor}20`,
+                },
+              ]}
+            >
+              <Ionicons
+                name={
+                  isCritical
+                    ? "warning-outline"
+                    : isClear
+                      ? "checkmark-circle-outline"
+                      : "wallet-outline"
+                }
+                size={21}
+                color={statusColor}
+              />
+            </View>
+
+            <View style={styles.statusTitleContainer}>
+              <Text
+                style={[
+                  styles.statusTitle,
+                  { color: statusColor },
+                ]}
+              >
+                {statusTitle}
+              </Text>
+
+              <Text
+                style={[
+                  styles.statusDescription,
+                  { color: statusColor },
+                ]}
+              >
+                {statusDescription}
+              </Text>
+            </View>
+          </View>
+
+          {!isClear && (
+            <>
+              <View
+                style={[
+                  styles.statusDivider,
+                  {
+                    backgroundColor: `${statusColor}30`,
+                  },
+                ]}
+              />
+
+              <Text
+                style={[
+                  styles.outstandingLabel,
+                  { color: statusColor },
+                ]}
+              >
+                {lang === "en"
+                  ? "Outstanding amount"
+                  : "நிலுவைத் தொகை"}
+              </Text>
+
+              <Text
+                style={[
+                  styles.outstandingAmount,
+                  { color: statusColor },
+                ]}
+              >
+                ₹{store.outstanding.toLocaleString("en-IN")}
+              </Text>
+
+              {store.daysOverdue > 0 && (
+                <View style={styles.overdueContainer}>
+                  <Ionicons
+                    name="time-outline"
+                    size={15}
+                    color={statusColor}
+                  />
+
+                  <Text
+                    style={[
+                      styles.overdueText,
+                      { color: statusColor },
+                    ]}
+                  >
+                    {store.daysOverdue}{" "}
+                    {lang === "en"
+                      ? "days overdue"
+                      : "நாட்கள் தாமதம்"}
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
+        </View>
+
+        {/* ACTIONS */}
+        <View style={styles.actionSection}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.text },
+            ]}
+          >
+            {lang === "en"
+              ? "Store Actions"
+              : "கடை செயல்கள்"}
           </Text>
-          {store.outstanding > 0 && (
-            <Text style={[styles.warningAmount, { color: colors.success }]}>
-              ₹{store.outstanding.toLocaleString("en-IN")}
+
+          <View style={styles.actionRow}>
+            <Pressable
+              onPress={handleCallOwner}
+              style={({ pressed }) => [
+                styles.callButton,
+                {
+                  borderColor: colors.primary,
+                  backgroundColor: colors.surface,
+                  opacity: pressed ? 0.75 : 1,
+                },
+              ]}
+            >
+              <Ionicons
+                name="call-outline"
+                size={19}
+                color={colors.primary}
+              />
+
+              <Text
+                style={[
+                  styles.callButtonText,
+                  { color: colors.primary },
+                ]}
+              >
+                {lang === "en"
+                  ? "Call Owner"
+                  : "உரிமையாளரை அழை"}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handleStartVisit}
+              style={({ pressed }) => [
+                styles.startButton,
+                {
+                  backgroundColor: colors.primary,
+                  opacity: pressed ? 0.82 : 1,
+                },
+              ]}
+            >
+              <Ionicons
+                name="navigate-outline"
+                size={19}
+                color="#FFFFFF"
+              />
+
+              <Text style={styles.startButtonText}>
+                {isCompleted
+                  ? lang === "en"
+                    ? "Visit Again"
+                    : "மீண்டும் வருக"
+                  : lang === "en"
+                    ? "Start Visit"
+                    : "வருகையைத் தொடங்கு"}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* CRITICAL NOTICE */}
+        {isCritical && (
+          <View
+            style={[
+              styles.noticeCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.noticeIcon,
+                {
+                  backgroundColor: colors.criticalBg,
+                },
+              ]}
+            >
+              <Ionicons
+                name="information-circle-outline"
+                size={20}
+                color={colors.critical}
+              />
+            </View>
+
+            <View style={styles.noticeContent}>
+              <Text
+                style={[
+                  styles.noticeTitle,
+                  { color: colors.text },
+                ]}
+              >
+                {lang === "en"
+                  ? "Before starting delivery"
+                  : "விநியோகத்தைத் தொடங்கும் முன்"}
+              </Text>
+
+              <Text
+                style={[
+                  styles.noticeText,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {lang === "en"
+                  ? "Please confirm with the owner before delivering products because this account has an overdue balance."
+                  : "இந்த கணக்கில் நிலுவை இருப்பதால், பொருட்களை விநியோகிப்பதற்கு முன் உரிமையாளரிடம் உறுதிப்படுத்தவும்."}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* STORE INSIGHTS */}
+        <View
+          style={[
+            styles.insightCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <View style={styles.insightHeader}>
+            <View
+              style={[
+                styles.insightIcon,
+                {
+                  backgroundColor: `${colors.primary}15`,
+                },
+              ]}
+            >
+              <Ionicons
+                name="bulb-outline"
+                size={19}
+                color={colors.primary}
+              />
+            </View>
+
+            <Text
+              style={[
+                styles.insightTitle,
+                { color: colors.text },
+              ]}
+            >
+              {lang === "en"
+                ? "Store Insights"
+                : "கடை தகவல்கள்"}
+            </Text>
+          </View>
+
+          {store.insights.length > 0 ? (
+            store.insights.map((insight, index) => (
+              <View
+                key={index}
+                style={styles.insightRow}
+              >
+                <View
+                  style={[
+                    styles.insightDot,
+                    {
+                      backgroundColor: colors.primary,
+                    },
+                  ]}
+                />
+
+                <Text
+                  style={[
+                    styles.insightText,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {insight}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <Text
+              style={[
+                styles.noInsightText,
+                { color: colors.textSecondary },
+              ]}
+            >
+              {lang === "en"
+                ? "No additional insights available."
+                : "கூடுதல் தகவல்கள் இல்லை."}
             </Text>
           )}
         </View>
-      )}
 
-      <View style={styles.buttonRow}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.outlineButton,
-            { borderColor: colors.primary, opacity: pressed ? 0.7 : 1 },
+        {/* STORE INFORMATION */}
+        <View
+          style={[
+            styles.infoCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
           ]}
-          onPress={() => Linking.openURL(`tel:${store.phone}`)}
         >
-          <Text style={[styles.outlineButtonText, { color: colors.primary }]}>
-            {lang === "en" ? "Call Owner" : "உரிமையாளரை அழை"}
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.text },
+            ]}
+          >
+            {lang === "en"
+              ? "Store Information"
+              : "கடை தகவல்"}
           </Text>
-        </Pressable>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.solidButton,
-            { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
-          ]}
-          onPress={() => router.push(`/store/${store.id}/delivery`)}
-        >
-          <Text style={styles.solidButtonText}>
-            {lang === "en" ? "View Store" : "கடையைப் பார்"}
-          </Text>
-        </Pressable>
-      </View>
+          <View style={styles.infoRow}>
+            <View
+              style={[
+                styles.infoIcon,
+                {
+                  backgroundColor: `${colors.primary}12`,
+                },
+              ]}
+            >
+              <Ionicons
+                name="storefront-outline"
+                size={18}
+                color={colors.primary}
+              />
+            </View>
 
-      <View style={[styles.insightCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Text style={[styles.insightTitle, { color: colors.text }]}>
-          {lang === "en" ? "Store Insight" : "கடை தகவல்"}
-        </Text>
-        {store.insights.map((insight, i) => (
-          <View key={i} style={styles.insightRow}>
-            <View style={[styles.insightDot, { backgroundColor: colors.primary }]} />
-            <Text style={[styles.insightText, { color: colors.textSecondary }]}>{insight}</Text>
+            <View style={styles.infoTextContainer}>
+              <Text
+                style={[
+                  styles.infoLabel,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {lang === "en" ? "Store" : "கடை"}
+              </Text>
+
+              <Text
+                style={[
+                  styles.infoValue,
+                  { color: colors.text },
+                ]}
+              >
+                {store.name}
+              </Text>
+            </View>
           </View>
-        ))}
-      </View>
-    </ScrollView>
+
+          <View
+            style={[
+              styles.infoDivider,
+              { backgroundColor: colors.border },
+            ]}
+          />
+
+          <View style={styles.infoRow}>
+            <View
+              style={[
+                styles.infoIcon,
+                {
+                  backgroundColor: `${colors.primary}12`,
+                },
+              ]}
+            >
+              <Ionicons
+                name="location-outline"
+                size={18}
+                color={colors.primary}
+              />
+            </View>
+
+            <View style={styles.infoTextContainer}>
+              <Text
+                style={[
+                  styles.infoLabel,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {lang === "en"
+                  ? "Area"
+                  : "பகுதி"}
+              </Text>
+
+              <Text
+                style={[
+                  styles.infoValue,
+                  { color: colors.text },
+                ]}
+              >
+                {store.area}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, paddingBottom: 40 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  storeName: { fontSize: 24, fontWeight: "800", letterSpacing: -0.4 },
-  storeArea: { fontSize: 14, marginTop: 2, marginBottom: 20 },
-  warningCard: { borderRadius: 16, borderWidth: 1.5, padding: 18, marginBottom: 20 },
-  warningLabel: { fontSize: 13, fontWeight: "800", marginBottom: 8, letterSpacing: 0.5 },
-  warningAmount: { fontSize: 26, fontWeight: "800" },
-  warningSub: { fontSize: 14, fontWeight: "600", marginTop: 4 },
-  warningNote: { fontSize: 13, fontWeight: "600", marginTop: 12 },
-  infoCard: { borderRadius: 16, borderWidth: 1.5, padding: 18, marginBottom: 20 },
-  infoLabel: { fontSize: 13, fontWeight: "800", letterSpacing: 0.5 },
-  buttonRow: { flexDirection: "row", gap: 12, marginBottom: 24 },
-  outlineButton: { flex: 1, borderWidth: 1.5, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  outlineButtonText: { fontWeight: "700", fontSize: 14 },
-  solidButton: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  solidButtonText: { color: "#fff", fontWeight: "700", fontSize: 14 },
-  insightCard: { borderRadius: 16, borderWidth: 1, padding: 18 },
-  insightTitle: { fontSize: 15, fontWeight: "700", marginBottom: 12 },
-  insightRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 8 },
-  insightDot: { width: 6, height: 6, borderRadius: 3, marginTop: 6, marginRight: 10 },
-  insightText: { fontSize: 13.5, flex: 1, lineHeight: 19 },
+  screen: {
+    flex: 1,
+  },
+
+  container: {
+  paddingHorizontal: 20,
+  paddingTop: 40,
+  paddingBottom: 40,
+},
+
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 30,
+  },
+
+  notFoundTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginTop: 12,
+  },
+
+  backButton: {
+    marginTop: 18,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+
+  backButtonText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  header: {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginBottom: 22,
+},
+
+headerBack: {
+  width: 42,
+  height: 42,
+  alignItems: "center",
+  justifyContent: "center",
+},
+
+headerIconButton: {
+  width: 42,
+  height: 42,
+  borderRadius: 12,
+  borderWidth: 1,
+  alignItems: "center",
+  justifyContent: "center",
+},
+
+  storeHeader: {
+    marginBottom: 20,
+  },
+
+  storeName: {
+    fontSize: 27,
+    fontWeight: "800",
+    letterSpacing: -0.6,
+  },
+
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 7,
+    gap: 5,
+  },
+
+  locationText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+
+  statusCard: {
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 24,
+  },
+
+  statusTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  statusIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  statusTitleContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+
+  statusTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+  },
+
+  statusDescription: {
+    fontSize: 12.5,
+    fontWeight: "500",
+    lineHeight: 18,
+    marginTop: 3,
+  },
+
+  statusDivider: {
+    height: 1,
+    marginVertical: 16,
+  },
+
+  outstandingLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+
+  outstandingAmount: {
+    fontSize: 29,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+    marginTop: 3,
+  },
+
+  overdueContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    gap: 5,
+  },
+
+  overdueText: {
+    fontSize: 12.5,
+    fontWeight: "700",
+  },
+
+  actionSection: {
+    marginBottom: 22,
+  },
+
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    marginBottom: 12,
+  },
+
+  actionRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+
+  callButton: {
+    flex: 1,
+    minHeight: 48,
+    borderWidth: 1.5,
+    borderRadius: 13,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+
+  callButtonText: {
+    fontSize: 13.5,
+    fontWeight: "700",
+  },
+
+  startButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 13,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+
+  startButtonText: {
+    color: "#FFFFFF",
+    fontSize: 13.5,
+    fontWeight: "700",
+  },
+
+  noticeCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: "row",
+    marginBottom: 22,
+  },
+
+  noticeIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  noticeContent: {
+    flex: 1,
+    marginLeft: 11,
+  },
+
+  noticeTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  noticeText: {
+    fontSize: 12.5,
+    lineHeight: 18,
+    marginTop: 4,
+  },
+
+  insightCard: {
+    borderWidth: 1,
+    borderRadius: 17,
+    padding: 17,
+    marginBottom: 18,
+  },
+
+  insightHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+
+  insightIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  insightTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    marginLeft: 10,
+  },
+
+  insightRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 10,
+  },
+
+  insightDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 7,
+    marginRight: 10,
+  },
+
+  insightText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+
+  noInsightText: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+
+  infoCard: {
+    borderWidth: 1,
+    borderRadius: 17,
+    padding: 17,
+  },
+
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  infoIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  infoTextContainer: {
+    flex: 1,
+    marginLeft: 11,
+  },
+
+  infoLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+
+  infoValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginTop: 2,
+  },
+
+  infoDivider: {
+    height: 1,
+    marginVertical: 14,
+  },
 });
