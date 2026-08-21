@@ -68,7 +68,9 @@ export default function Signup() {
               styles.button,
               { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
             ]}
-            onPress={() => router.replace("/(tabs)/beat")}
+            onPress={() =>
+  router.replace("/(tabs)/home")
+}
           >
             <Text style={styles.buttonText}>{t("signup")}</Text>
           </Pressable>

@@ -6,9 +6,9 @@ import {
   View,
 } from "react-native";
 
-import { useBeat } from "../../context/BeatContext";
-import { useLanguage } from "../../context/LanguageContext";
-import { useTheme } from "../../context/ThemeContext";
+import { useBeat } from "../../../context/BeatContext";
+import { useLanguage } from "../../../context/LanguageContext";
+import { useTheme } from "../../../context/ThemeContext";
 
 export default function Day() {
   const { colors } = useTheme();

@@ -12,10 +12,10 @@ import {
 import { useMemo, useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useBeat } from "../../context/BeatContext";
-import { useLanguage } from "../../context/LanguageContext";
-import { useTheme } from "../../context/ThemeContext";
-import { Store } from "../../constants/mockStores";
+import { useBeat } from "../../../context/BeatContext";
+import { useLanguage } from "../../../context/LanguageContext";
+import { useTheme } from "../../../context/ThemeContext";
+import { Store } from "../../../constants/mockStores";
 
 type Filter = "all" | "critical" | "outstanding" | "clear";
 
