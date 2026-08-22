@@ -28,6 +28,12 @@ export default function Day() {
     completionPercentage: 0,
   });
 
+  const {
+    stores,
+    completedTransactions,
+    lastCompletedAt,
+  } = useBeat();
+
   useEffect(() => {
     async function fetchSummary() {
       if (!selectedDistributor) return;
@@ -44,12 +50,6 @@ export default function Day() {
     }
     fetchSummary();
   }, [selectedDistributor, lastCompletedAt]);
-
-  const {
-    stores,
-    completedTransactions,
-    lastCompletedAt,
-  } = useBeat();
 
   const totalStores = summaryData.assigned;
   const completedStores = summaryData.completed;
