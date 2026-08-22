@@ -668,10 +668,11 @@ async function addPayment(req, res, next) {
       });
     }
 
-    if (method !== "cash") {
+
+    if (!["cash", "upi"].includes(method)) {
       return res.status(400).json({
         success: false,
-        message: "Use the Razorpay payment flow for UPI",
+        message: "Invalid payment method. Use 'cash' or 'upi'.",
       });
     }
 
@@ -702,7 +703,7 @@ async function addPayment(req, res, next) {
         storeVisitId: visitId,
         deliveryBoyId,
         amount: numericAmount,
-        method: "cash",
+        method: method,
         reference: reference || undefined,
       },
     });
@@ -719,7 +720,7 @@ async function addPayment(req, res, next) {
 
     return res.status(201).json({
       success: true,
-      message: "Cash payment recorded",
+      message: "Payment recorded",
       data: {
         payment,
       },

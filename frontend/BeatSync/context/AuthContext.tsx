@@ -134,12 +134,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const destination = isNewUser ? "settings" : "dashboard";
       window.location.href = `http://localhost:5173/${destination}?token=${newToken}`;
     } else if (newRole === "delivery_boy") {
-      // New signup → join distributor settings; existing login → home tabs
+      // New signup → go to settings to join a distributor first
+      // Existing login → go straight to home
       if (isNewUser) {
-        router.replace("/(tabs)/home");
-        setTimeout(() => {
-          router.push("/settings/distributors");
-        }, 100);
+        // Replace ensures the auth stack is fully removed from history
+        router.replace("/settings/distributors");
       } else {
         router.replace("/(tabs)/home");
       }

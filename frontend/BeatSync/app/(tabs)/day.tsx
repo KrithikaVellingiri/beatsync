@@ -43,11 +43,12 @@ export default function Day() {
       }
     }
     fetchSummary();
-  }, [selectedDistributor]);
+  }, [selectedDistributor, lastCompletedAt]);
 
   const {
     stores,
     completedTransactions,
+    lastCompletedAt,
   } = useBeat();
 
   const totalStores = summaryData.assigned;

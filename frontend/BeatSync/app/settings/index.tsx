@@ -32,7 +32,7 @@ export default function Settings() {
       {/* HEADER */}
       <View style={styles.header}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => router.navigate("/(tabs)/home")}
           hitSlop={12}
           style={({ pressed }) => ({
             opacity: pressed ? 0.5 : 1,

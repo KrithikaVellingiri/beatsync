@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import { useBeatSyncStore } from "../store/useBeatSyncStore";
@@ -6,10 +6,17 @@ import { translate } from "../i18n";
 
 export default function PendingCalendar({ onClose }) {
   const language = useBeatSyncStore((state) => state.language);
+  const deliveryBoys = useBeatSyncStore((state) => state.deliveryBoys);
+  const fetchTeam = useBeatSyncStore((state) => state.fetchTeam);
   const t = (key) => translate(language, key);
-  const [selectedDate, setSelectedDate] = useState(
-    new Date("2026-08-19")
-  );
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Fetch team on mount if not already loaded
+  useEffect(() => {
+    if (!deliveryBoys || deliveryBoys.length === 0) {
+      fetchTeam();
+    }
+  }, []);
 
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth();
@@ -33,7 +40,6 @@ export default function PendingCalendar({ onClose }) {
     return `${year}-${monthNumber}-${dayNumber}`;
   };
 
-  const pendingItems = [];
 
   const previousMonth = () => {
     setSelectedDate(
@@ -132,8 +138,7 @@ export default function PendingCalendar({ onClose }) {
           const day = index + 1;
           const dateKey = getDateKey(day);
 
-          const hasPending =
-            pendingItemsByDate[dateKey]?.length > 0;
+          const hasPending = false; // Future: populate from beat API
 
           const isSelected =
             day === selectedDate.getDate();
@@ -175,96 +180,62 @@ export default function PendingCalendar({ onClose }) {
       <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
 
         <div className="flex items-center justify-between mb-3">
-
           <div>
             <div className="text-[10px] uppercase tracking-wide text-slate-500">
               {t("selectedDate")}
             </div>
-
             <div className="font-bold text-sm mt-1">
-              {selectedDate.toLocaleDateString(
-                "en-IN",
-                {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                }
-              )}
+              {selectedDate.toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
             </div>
           </div>
-
-          <span className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-950/30 px-2.5 py-1 rounded-full">
-            {pendingItems.length} {t("pending")}
+          <span className="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full">
+            No pending data
           </span>
-
         </div>
 
-
-        {/* PENDING ITEMS */}
-
-        {pendingItems.length === 0 ? (
-
-          <div className="text-center py-6 text-xs text-slate-500">
-            {t("noPendingItems")}
-          </div>
-
-        ) : (
-
-          <div className="space-y-2 max-h-52 overflow-y-auto">
-
-            {pendingItems.map((item) => (
-
-              <div
-                key={item.id}
-                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50"
-              >
-
-                <div className="flex items-center justify-between">
-
-                  <div>
-                    <div className="font-bold text-xs">
-                      {item.storeName}
-                    </div>
-
-                    <div className="text-[10px] text-slate-500 mt-1">
-                      {item.locality}
-                    </div>
-                  </div>
-
-                  <StatusBadge
-                    status={item.status}
-                  />
-
-                </div>
-
-                <div className="flex items-center justify-between mt-2">
-
-                  <span className="font-bold text-xs">
-                    ₹{item.outstanding.toLocaleString("en-IN")}
-                  </span>
-
-                  <span
-                    className={`text-[10px] font-bold ${
-                      item.age >= 30
-                        ? "text-red-600"
-                        : "text-amber-600"
-                    }`}
-                  >
-                    {item.age} days
-                  </span>
-
-                </div>
-
-              </div>
-
-            ))}
-
-          </div>
-
-        )}
+        <div className="text-center py-4 text-xs text-slate-500">
+          {t("noPendingItems")}
+        </div>
 
       </div>
 
+      {/* DELIVERY TEAM */}
+      {deliveryBoys && deliveryBoys.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+          <div className="text-[10px] uppercase tracking-wide text-slate-500 mb-3">
+            Delivery Team
+          </div>
+          <div className="space-y-2">
+            {deliveryBoys.map((boy) => {
+              const initials = (boy.name || "?").substring(0, 2).toUpperCase();
+              return (
+                <div
+                  key={boy.id}
+                  className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                >
+                  <div className="w-8 h-8 rounded-full bg-blue-100 text-[#2563eb] grid place-items-center font-bold text-xs shrink-0">
+                    {initials}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-semibold text-xs truncate">{boy.name}</div>
+                    {boy.phone && (
+                      <div className="text-[10px] text-slate-500">{boy.phone}</div>
+                    )}
+                  </div>
+                  <span className="ml-auto text-[10px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full">
+                    Active
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
     </div>
   );
-}
+}

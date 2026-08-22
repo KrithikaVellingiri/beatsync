@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+﻿import React, { createContext, useContext, useState, useEffect } from "react";
 import { api } from "../api/client";
 import { useDistributor } from "./DistributorContext";
 import { Alert } from "react-native";
@@ -30,7 +30,7 @@ export type Product = {
 export type StoreStatus = "critical" | "clear" | "collectFirst";
 
 export type Store = {
-  id: string; // This is the BeatAssignmentStore ID
+  id: string;
   name: string;
   area: string;
   phone: string;
@@ -47,24 +47,20 @@ type BeatContextType = {
   products: Product[];
   isLoading: boolean;
   fetchMyBeat: () => Promise<void>;
-
   getStore: (id: string) => Store | undefined;
-
   draftEntries: Record<string, DraftEntry>;
   setDelivered: (productId: string, qty: number) => void;
   setReturned: (productId: string, qty: number) => void;
-
   paymentMethod: PaymentMethod;
   setPaymentMethod: (method: PaymentMethod) => void;
-
   amountCollected: number;
   setAmountCollected: (amount: number) => void;
-
   lastTransaction: CompletedTransaction | null;
   completedTransactions: CompletedTransaction[];
   completeVisit: (storeId: string) => Promise<CompletedTransaction | null>;
   resetDraft: () => void;
   getNextIncompleteStoreId: (excludeId: string) => string | null;
+  lastCompletedAt: number;
 };
 
 const BeatContext = createContext<BeatContextType | undefined>(undefined);
@@ -74,24 +70,20 @@ export function BeatProvider({ children }: { children: React.ReactNode }) {
   const [stores, setStores] = useState<Store[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-
   const [draftEntries, setDraftEntries] = useState<Record<string, DraftEntry>>({});
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [amountCollected, setAmountCollected] = useState(0);
-
   const [lastTransaction, setLastTransaction] = useState<CompletedTransaction | null>(null);
   const [completedTransactions, setCompletedTransactions] = useState<CompletedTransaction[]>([]);
+  const [lastCompletedAt, setLastCompletedAt] = useState(0);
 
   const fetchMyBeat = async () => {
     if (!selectedDistributor) return;
     setIsLoading(true);
     try {
-      const res = await api.get("/delivery/my-beat", {
-        distributorId: selectedDistributor.id,
-      });
+      const res = await api.get("/delivery/my-beat", { distributorId: selectedDistributor.id });
       if (res.success && res.data.assignment) {
-        const assignmentStores = res.data.assignment.stores;
-        const mappedStores: Store[] = assignmentStores.map((item: any) => {
+        const mappedStores: Store[] = res.data.assignment.stores.map((item: any) => {
           const isDone = item.visit?.status === "completed";
           return {
             id: item.id.toString(),
@@ -108,14 +100,8 @@ export function BeatProvider({ children }: { children: React.ReactNode }) {
         });
         setStores(mappedStores);
       } else {
-        setStores([]); // No beat for today
+        setStores([]);
       }
-
-      // We also need to fetch products, ideally we could fetch this once per distributor
-      // We will just fetch it from a hypothetical GET /skus or GET /team/distributor/mine?
-      // Wait, the API has /delivery/visits/:visitId/products. We can't fetch it without a visit.
-      // But products are the same for the whole distributor. We could just call the distributor products API if available.
-      // Let's use the first store's visit if available, or just mock it temporarily until startVisit.
     } catch (err) {
       console.log(err);
       setStores([]);
@@ -129,35 +115,29 @@ export function BeatProvider({ children }: { children: React.ReactNode }) {
       setStores([]);
       setProducts([]);
       setCompletedTransactions([]);
+      setLastCompletedAt(0);
       fetchMyBeat();
     } else {
       setStores([]);
       setProducts([]);
       setCompletedTransactions([]);
+      setLastCompletedAt(0);
     }
   }, [selectedDistributor]);
 
-  const getStore = (id: string) => {
-    return stores.find((store) => store.id === id);
-  };
+  const getStore = (id: string) => stores.find((s) => s.id === id);
 
   const setDelivered = (productId: string, qty: number) => {
-    setDraftEntries((previous) => ({
-      ...previous,
-      [productId]: {
-        delivered: Math.max(0, qty),
-        returned: previous[productId]?.returned ?? 0,
-      },
+    setDraftEntries((prev) => ({
+      ...prev,
+      [productId]: { delivered: Math.max(0, qty), returned: prev[productId]?.returned ?? 0 },
     }));
   };
 
   const setReturned = (productId: string, qty: number) => {
-    setDraftEntries((previous) => ({
-      ...previous,
-      [productId]: {
-        delivered: previous[productId]?.delivered ?? 0,
-        returned: Math.max(0, qty),
-      },
+    setDraftEntries((prev) => ({
+      ...prev,
+      [productId]: { delivered: prev[productId]?.delivered ?? 0, returned: Math.max(0, qty) },
     }));
   };
 
@@ -170,21 +150,13 @@ export function BeatProvider({ children }: { children: React.ReactNode }) {
   const fetchProductsForVisit = async (visitId: string) => {
     if (!selectedDistributor) return;
     try {
-      const res = await api.get(`/delivery/visits/${visitId}/products`, {
-        distributorId: selectedDistributor.id,
-      });
+      const res = await api.get(`/delivery/visits/${visitId}/products`, { distributorId: selectedDistributor.id });
       if (res.success) {
         setProducts(res.data.products.map((p: any) => ({
-          id: p.id.toString(),
-          name: p.name,
-          code: p.code,
-          unit: p.unit,
-          price: p.price,
+          id: p.id.toString(), name: p.name, code: p.code, unit: p.unit, price: p.price,
         })));
       }
-    } catch (err) {
-      console.log(err);
-    }
+    } catch (err) { console.log(err); }
   };
 
   const completeVisit = async (storeId: string): Promise<CompletedTransaction | null> => {
@@ -193,89 +165,61 @@ export function BeatProvider({ children }: { children: React.ReactNode }) {
     if (!store) return null;
 
     let visitId = store.visitId;
-
     try {
-      // 1. Start Visit if not started
       if (!visitId) {
-        const startRes = await api.post(`/delivery/visits/${storeId}/start`, {
-          distributorId: selectedDistributor.id,
-        });
-        if (!startRes.success) {
-          Alert.alert("Error", startRes.message || "Failed to start visit.");
-          return null;
-        }
+        const startRes = await api.post(`/delivery/visits/${storeId}/start`, { distributorId: selectedDistributor.id });
+        if (!startRes.success) { Alert.alert("Error", startRes.message || "Failed to start visit."); return null; }
         visitId = startRes.data.visit.id.toString();
-        // Optimistically update store
         store.visitId = visitId;
       }
 
-      // Ensure we have products fetched
-      if (products.length === 0 && visitId) {
-        await fetchProductsForVisit(visitId);
-      }
+      if (products.length === 0 && visitId) await fetchProductsForVisit(visitId);
 
-      // 2. Add Delivery Items
       const deliveryPayload = Object.entries(draftEntries)
-        .filter(([_, entry]) => entry.delivered > 0)
-        .map(([skuId, entry]) => ({ skuId: parseInt(skuId), quantity: entry.delivered }));
-      
+        .filter(([_, e]) => e.delivered > 0)
+        .map(([skuId, e]) => ({ skuId: parseInt(skuId), quantity: e.delivered }));
       if (deliveryPayload.length > 0) {
-        await api.post(`/delivery/visits/${visitId}/items`, {
-          distributorId: selectedDistributor.id,
-          body: { items: deliveryPayload },
-        });
+        await api.post(`/delivery/visits/${visitId}/items`, { distributorId: selectedDistributor.id, body: { items: deliveryPayload } });
       }
 
-      // 3. Add Return Items
       const returnPayload = Object.entries(draftEntries)
-        .filter(([_, entry]) => entry.returned > 0)
-        .map(([skuId, entry]) => ({ skuId: parseInt(skuId), quantity: entry.returned }));
-      
+        .filter(([_, e]) => e.returned > 0)
+        .map(([skuId, e]) => ({ skuId: parseInt(skuId), quantity: e.returned }));
       if (returnPayload.length > 0) {
-        await api.post(`/delivery/visits/${visitId}/returns`, {
-          distributorId: selectedDistributor.id,
-          body: { items: returnPayload },
-        });
+        await api.post(`/delivery/visits/${visitId}/returns`, { distributorId: selectedDistributor.id, body: { items: returnPayload } });
       }
 
-      // 4. Add Payment
       if (amountCollected > 0) {
-        await api.post(`/delivery/visits/${visitId}/payment`, {
-          distributorId: selectedDistributor.id,
-          body: {
-            amount: amountCollected,
-            method: paymentMethod,
-            reference: paymentMethod !== "cash" ? "tx_auto" : undefined,
-          },
-        });
+        if (paymentMethod === "credit") {
+          const promisedDate = new Date();
+          promisedDate.setDate(promisedDate.getDate() + 30);
+          await api.post(`/delivery/visits/${visitId}/credit`, {
+            distributorId: selectedDistributor.id,
+            body: { amount: amountCollected, promisedDate: promisedDate.toISOString(), note: "Credit recorded at visit completion" },
+          });
+        } else {
+          await api.post(`/delivery/visits/${visitId}/payment`, {
+            distributorId: selectedDistributor.id,
+            body: { amount: amountCollected, method: paymentMethod },
+          });
+        }
       }
 
-      // 5. Complete Visit
-      const completeRes = await api.post(`/delivery/visits/${visitId}/complete`, {
-        distributorId: selectedDistributor.id,
-      });
+      const completeRes = await api.post(`/delivery/visits/${visitId}/complete`, { distributorId: selectedDistributor.id });
+      if (!completeRes.success) { Alert.alert("Error", completeRes.message || "Failed to complete visit."); return null; }
 
-      if (!completeRes.success) {
-        Alert.alert("Error", completeRes.message || "Failed to complete visit.");
-        return null;
-      }
-
-      // Refresh beat
       await fetchMyBeat();
+      setLastCompletedAt(Date.now());
 
+      const collected = paymentMethod !== "credit" ? amountCollected : 0;
       const transaction: CompletedTransaction = {
-        storeId,
-        entries: draftEntries,
-        paymentMethod,
-        amountCollected,
+        storeId, entries: draftEntries, paymentMethod, amountCollected,
         timestamp: new Date().toISOString(),
-        outstandingAfter: Math.max(0, (store.outstanding ?? 0) - amountCollected),
+        outstandingAfter: Math.max(0, (store.outstanding ?? 0) - collected),
       };
-
       setLastTransaction(transaction);
       setCompletedTransactions((prev) => [...prev, transaction]);
       resetDraft();
-
       return transaction;
     } catch (err) {
       console.log("Error completing visit:", err);
@@ -285,32 +229,19 @@ export function BeatProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getNextIncompleteStoreId = (excludeId: string) => {
-    const nextStore = stores.find((s) => s.id !== excludeId && !s.done);
-    return nextStore ? nextStore.id : null;
+    const next = stores.find((s) => s.id !== excludeId && !s.done);
+    return next ? next.id : null;
   };
 
   return (
-    <BeatContext.Provider
-      value={{
-        stores,
-        products,
-        isLoading,
-        fetchMyBeat,
-        getStore,
-        draftEntries,
-        setDelivered,
-        setReturned,
-        paymentMethod,
-        setPaymentMethod,
-        amountCollected,
-        setAmountCollected,
-        lastTransaction,
-        completedTransactions,
-        completeVisit,
-        resetDraft,
-        getNextIncompleteStoreId,
-      }}
-    >
+    <BeatContext.Provider value={{
+      stores, products, isLoading, fetchMyBeat, getStore,
+      draftEntries, setDelivered, setReturned,
+      paymentMethod, setPaymentMethod,
+      amountCollected, setAmountCollected,
+      lastTransaction, completedTransactions, completeVisit, resetDraft,
+      getNextIncompleteStoreId, lastCompletedAt,
+    }}>
       {children}
     </BeatContext.Provider>
   );
@@ -318,8 +249,6 @@ export function BeatProvider({ children }: { children: React.ReactNode }) {
 
 export function useBeat() {
   const context = useContext(BeatContext);
-  if (!context) {
-    throw new Error("useBeat must be used within BeatProvider");
-  }
+  if (!context) throw new Error("useBeat must be used within BeatProvider");
   return context;
 }
