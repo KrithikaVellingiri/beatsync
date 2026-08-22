@@ -15,6 +15,7 @@ import {
 
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
 import * as AuthSession from "expo-auth-session";
@@ -32,10 +33,11 @@ export default function DistributorLogin() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB;
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB, // Sometimes acts as fallback
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB,
+    clientId: googleWebClientId || "not-configured",
+    webClientId: googleWebClientId || "not-configured",
   });
 
   React.useEffect(() => {
@@ -97,6 +99,10 @@ export default function DistributorLogin() {
 
   const handleGoogleLogin = async () => {
     setError("");
+    if (!googleWebClientId) {
+      setError("Google login is not configured. Use email/password or configure the Google Web Client ID.");
+      return;
+    }
     if (Platform.OS === "web") {
       promptAsync();
       return;
@@ -112,7 +118,7 @@ export default function DistributorLogin() {
       const userInfo = await GoogleSignin.signIn();
       
       // userInfo is an object for new versions, but let's grab idToken directly.
-      const idToken = userInfo.data?.idToken || userInfo.idToken;
+      const idToken = userInfo.data?.idToken;
       if (!idToken) throw new Error("No ID token returned");
       
       await handleBackendGoogleLogin(idToken);

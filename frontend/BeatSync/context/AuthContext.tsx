@@ -91,7 +91,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoading || initialRedirectDone) return;
 
-    const inAuthGroup = segments[0] === "(auth)" || segments.length === 0 || segments[0] === "index";
+    const firstSegment = segments[0] as string | undefined;
+    const segmentCount = segments.length as number;
+    const inAuthGroup = firstSegment === "(auth)" || segmentCount === 0 || firstSegment === "index";
 
     if (token && inAuthGroup) {
       setInitialRedirectDone(true);
@@ -109,7 +111,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === "(auth)" || segments.length === 0 || segments[0] === "index";
+    const firstSegment = segments[0] as string | undefined;
+    const segmentCount = segments.length as number;
+    const inAuthGroup = firstSegment === "(auth)" || segmentCount === 0 || firstSegment === "index";
 
     if (!token && !inAuthGroup) {
       // Not authenticated and trying to access protected screen → redirect to root selection

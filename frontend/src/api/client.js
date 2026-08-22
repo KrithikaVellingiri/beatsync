@@ -12,6 +12,11 @@ async function fetchWithAuth(endpoint, options = {}) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  const distributorId = localStorage.getItem("active_distributor_id");
+  if (distributorId) {
+    headers["X-Distributor-Id"] = distributorId;
+  }
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,
