@@ -11,6 +11,8 @@ async function createStore(req, res, next) {
       address,
       latitude,
       longitude,
+      locality,
+      outstandingBalance,
     } = req.body;
 
     if (!name) {
@@ -27,6 +29,8 @@ async function createStore(req, res, next) {
         ownerName: ownerName || undefined,
         phone: phone || undefined,
         address: address || undefined,
+        locality: locality || undefined,
+        outstandingBalance: outstandingBalance !== undefined ? outstandingBalance : 0,
         latitude:
           latitude !== undefined ? Number(latitude) : undefined,
         longitude:

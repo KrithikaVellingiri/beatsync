@@ -10,10 +10,12 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Profile() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { logout } = useAuth();
 
   return (
     <View
@@ -69,10 +71,12 @@ export default function Profile() {
           <Text
             style={[
               styles.name,
-              { color: colors.text },
+              {
+                color: colors.text,
+              },
             ]}
           >
-            Raju Kumar
+            Delivery Partner
           </Text>
 
           <Text
@@ -159,7 +163,7 @@ export default function Profile() {
 
         {/* LOGOUT */}
 
-        <Pressable style={styles.logoutButton}>
+        <Pressable style={styles.logoutButton} onPress={logout}>
           <Ionicons
             name="log-out-outline"
             size={20}

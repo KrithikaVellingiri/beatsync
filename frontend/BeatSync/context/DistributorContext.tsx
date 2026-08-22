@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
+import { api } from "../api/client";
 
 export type Distributor = {
   id: string;
@@ -17,7 +18,7 @@ type DistributorContextType = {
   distributors: Distributor[];
   selectedDistributor: Distributor | null;
 
-  addDistributor: (distributor: Distributor) => void;
+  fetchDistributors: () => Promise<void>;
   selectDistributor: (distributor: Distributor) => void;
   removeDistributor: (id: string) => void;
 };
@@ -37,48 +38,26 @@ export function DistributorProvider({
   const [selectedDistributor, setSelectedDistributor] =
     useState<Distributor | null>(null);
 
-  // Load saved distributors
-  useEffect(() => {
-    const loadDistributors = async () => {
-      try {
-        const saved = await AsyncStorage.getItem(STORAGE_KEY);
-
-        if (saved) {
-          const parsed: Distributor[] = JSON.parse(saved);
-          setDistributors(parsed);
-        }
-      } catch (error) {
-        console.log("Failed to load distributors:", error);
+  const fetchDistributors = async () => {
+    try {
+      const res = await api.get("/team/distributor/mine");
+      if (res.success) {
+        const mapped = res.data.distributors.map((membership: any) => ({
+          id: membership.distributor.id.toString(),
+          name: membership.distributor.name,
+          location: "Location not provided",
+          code: membership.distributor.code,
+        }));
+        setDistributors(mapped);
       }
-    };
-
-    loadDistributors();
-  }, []);
-
-  // Save distributors whenever they change
-  useEffect(() => {
-    AsyncStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(distributors)
-    ).catch((error) => {
-      console.log("Failed to save distributors:", error);
-    });
-  }, [distributors]);
-
-  const addDistributor = (distributor: Distributor) => {
-    setDistributors((current) => {
-      // Prevent duplicate distributors
-      const alreadyExists = current.some(
-        (item) => item.id === distributor.id
-      );
-
-      if (alreadyExists) {
-        return current;
-      }
-
-      return [...current, distributor];
-    });
+    } catch (error) {
+      console.log("Failed to fetch distributors:", error);
+    }
   };
+
+  useEffect(() => {
+    fetchDistributors();
+  }, []);
 
   const selectDistributor = (distributor: Distributor) => {
     setSelectedDistributor(distributor);
@@ -99,7 +78,7 @@ export function DistributorProvider({
       value={{
         distributors,
         selectedDistributor,
-        addDistributor,
+        fetchDistributors,
         selectDistributor,
         removeDistributor,
       }}

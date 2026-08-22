@@ -4,14 +4,11 @@ import {
   X,
 } from "lucide-react";
 
-import {
-  deliveryBoys,
-  stores,
-} from "../data/mockData";
-
 import StatusBadge from "./StatusBadge";
 import { useBeatSyncStore } from "../store/useBeatSyncStore";
 import { translate } from "../i18n";
+import { api } from "../api/client";
+import { useState, useEffect } from "react";
 
 export default function StoreDetailDrawer({
   storeId,
@@ -19,16 +16,31 @@ export default function StoreDetailDrawer({
 }) {
   const language = useBeatSyncStore((state) => state.language);
   const t = (key) => translate(language, key);
-  const store = stores.find(
-    (item) => item.id === storeId
-  );
+  const [storeData, setStoreData] = useState(null);
+  const [ledgerData, setLedgerData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (!store) return null;
+  useEffect(() => {
+    if (!storeId) return;
+    
+    async function fetchLedger() {
+      setIsLoading(true);
+      try {
+        const res = await api.get(`/ledger/stores/${storeId}`);
+        if (res.success) {
+          setStoreData(res.data.store);
+          setLedgerData(res.data.ledger);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchLedger();
+  }, [storeId]);
 
-  const deliveryBoy =
-    deliveryBoys.find(
-      (boy) => boy.id === store.boyId
-    );
+  if (!storeId) return null;
 
   return (
     <div
@@ -63,11 +75,11 @@ export default function StoreDetailDrawer({
 
                 <MapPin size={12} />
 
-                {store.locality}
+                {storeData?.locality || "Unassigned"}
 
                 <span>·</span>
 
-                ID {store.id.toUpperCase()}
+                ID {storeId.toString().toUpperCase()}
 
               </div>
 
@@ -88,45 +100,43 @@ export default function StoreDetailDrawer({
 
         <div className="p-6 space-y-4">
 
-
+          {isLoading ? (
+             <div className="text-center p-8 text-slate-500">Loading details...</div>
+          ) : (
+            <>
           {/* SUMMARY */}
           <div className="grid grid-cols-2 gap-3">
 
             <Info
               label={t("assignedBoy")}
-              value={
-                deliveryBoy?.name ||
-                "Unassigned"
-              }
+              value={"Unknown"}
             />
 
             <Info
               label={t("contact")}
-              value={store.contact || "Not available"}
+              value={storeData?.phone || storeData?.contact || "Not available"}
             />
 
             <Info
               label={t("outstanding")}
-              value={`₹${store.outstanding.toLocaleString(
+              value={`₹${(storeData?.outstandingBalance || 0).toLocaleString(
                 "en-IN"
               )}`}
             />
 
             <Info
               label={t("outstandingAge")}
-              value={`${store.overdue} days`}
+              value={`${storeData?.overdueDays || 0} days`}
             />
 
             <Info
               label={t("lastVisited")}
-              value={store.lastVisited || "Not available"}
+              value={"Not available"}
             />
 
             <Info
               label={t("lastPayment")}
-              value={`₹${store.lastPayment.toLocaleString(
-                "en-IN"
-              )}`}
+              value={`—`}
             />
 
           </div>
@@ -144,13 +154,13 @@ export default function StoreDetailDrawer({
                 </div>
 
                 <div className="font-bold mt-1">
-                  {store.status}
+                  {(storeData?.outstandingBalance || 0) > 15000 ? "Critical" : "Healthy"}
                 </div>
 
               </div>
 
               <StatusBadge
-                status={store.status}
+                status={(storeData?.outstandingBalance || 0) > 15000 ? "Critical" : "Healthy"}
               />
 
             </div>
@@ -212,7 +222,7 @@ export default function StoreDetailDrawer({
             </div>
 
 
-            {store.transactions.map(
+            {ledgerData.map(
               (transaction, index) => (
 
                 <div
@@ -221,27 +231,33 @@ export default function StoreDetailDrawer({
                 >
 
                   <span className="text-slate-500">
-                    {transaction[0]}
+                    {new Date(transaction.createdAt).toLocaleDateString()}
                   </span>
 
                   <span className="font-semibold">
-                    {transaction[1]}
+                    {transaction.type}
                   </span>
 
                   <span className="font-bold">
-                    {transaction[2]}
+                    ₹{Number(transaction.amount).toLocaleString("en-IN")}
                   </span>
 
                   <span className="text-slate-500">
-                    {transaction[3]}
+                    {transaction.description || ""}
                   </span>
 
                 </div>
 
               )
             )}
+            
+            {ledgerData.length === 0 && (
+              <div className="p-4 text-center text-slate-500 text-xs">No transactions found</div>
+            )}
 
           </section>
+          </>
+          )}
 
         </div>
 

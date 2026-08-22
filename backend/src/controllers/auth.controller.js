@@ -1,9 +1,12 @@
 const bcrypt = require("bcrypt");
 const { randomInt } = require("crypto");
+const { OAuth2Client } = require("google-auth-library");
 
 const prisma = require("../lib/prisma");
 const { signToken } = require("../utils/jwt");
 const { sanitizeUser } = require("../utils/sanitize");
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const SALT_ROUNDS = 10;
 
@@ -100,6 +103,7 @@ async function registerOwner(req, res, next) {
       message: "Owner and distributor account created",
       data: {
         token,
+        isNewUser: true,
         user: sanitizeUser(result.user),
         distributor: result.distributor,
       },
@@ -167,6 +171,7 @@ async function registerDeliveryBoy(req, res, next) {
           distributorId: null,
           role: user.role,
         }),
+        isNewUser: true,
         user: sanitizeUser(user),
       },
     });
@@ -191,8 +196,13 @@ async function login(req, res, next) {
       });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { phone },
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { phone: phone },
+          { email: phone }
+        ]
+      },
     });
 
     if (!user || !user.isActive) {
@@ -225,6 +235,7 @@ async function login(req, res, next) {
       message: "Login successful",
       data: {
         token,
+        isNewUser: false,
         user: sanitizeUser(user),
       },
     });
@@ -264,10 +275,76 @@ async function me(req, res, next) {
   }
 }
 
+// POST /api/auth/google
+async function googleAuth(req, res) {
+  try {
+    const { token: idToken, role } = req.body;
+
+    if (!idToken || !role) {
+      return res.status(400).json({ success: false, message: "token and role are required" });
+    }
+    if (role !== "owner" && role !== "delivery_boy") {
+      return res.status(400).json({ success: false, message: "Invalid role" });
+    }
+
+    const client = new OAuth2Client();
+    
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: [
+        process.env.GOOGLE_CLIENT_ID_WEB,
+        process.env.GOOGLE_CLIENT_ID_ANDROID,
+        process.env.GOOGLE_CLIENT_ID_IOS
+      ].filter(Boolean)
+    });
+    const payload = ticket.getPayload();
+    const email = payload.email;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Google account has no email" });
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: email },
+          { phone: email }
+        ]
+      }
+    });
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: "No active account found with this Google email. Please sign up first.",
+      });
+    }
+
+    const token = signToken({
+      userId: user.id,
+      distributorId: user.distributorId,
+      role: user.role,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Google Login successful",
+      data: {
+        token,
+        isNewUser: false,
+        user: sanitizeUser(user),
+      },
+    });
+  } catch (error) {
+    console.error("Google Auth Error:", error);
+    return res.status(401).json({ success: false, message: "Invalid Google Token" });
+  }
+}
 
 module.exports = {
   registerOwner,
   registerDeliveryBoy,
   login,
+  googleAuth,
   me,
 };

@@ -46,8 +46,7 @@ type ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const system = useColorScheme();
-  const [mode, setMode] = useState<"light" | "dark">(system === "dark" ? "dark" : "light");
+  const [mode, setMode] = useState<"light" | "dark">("light");
 
   useEffect(() => {
     AsyncStorage.getItem("beatsync_theme").then((saved) => {

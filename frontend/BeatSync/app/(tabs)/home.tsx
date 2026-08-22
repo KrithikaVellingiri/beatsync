@@ -57,7 +57,7 @@ export default function Home() {
               { color: colors.text },
             ]}
           >
-            Raju 👋
+            Welcome 👋
           </Text>
         </View>
 

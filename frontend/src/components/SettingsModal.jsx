@@ -11,7 +11,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { deliveryBoys } from "../data/mockData";
+
 import { useBeatSyncStore } from "../store/useBeatSyncStore";
 import { translate } from "../i18n";
 
@@ -35,13 +35,27 @@ export default function SettingsModal({ onClose }) {
     name: "",
     location: "",
     phone: "",
+    outstandingBalance: "",
   });
   const [productDetails, setProductDetails] = useState({
-    id: "",
     name: "",
     price: "",
   });
+  const fetchDistributorInfo = useBeatSyncStore((state) => state.fetchDistributorInfo);
+  const fetchStores = useBeatSyncStore((state) => state.fetchStores);
+  const fetchProducts = useBeatSyncStore((state) => state.fetchProducts);
+  const fetchTeam = useBeatSyncStore((state) => state.fetchTeam);
+  const distributorInfo = useBeatSyncStore((state) => state.distributorInfo);
+  const deliveryBoys = useBeatSyncStore((state) => state.deliveryBoys);
+
   const t = (key) => translate(language, key);
+
+  useEffect(() => {
+    fetchDistributorInfo();
+    fetchStores();
+    fetchProducts();
+    fetchTeam();
+  }, [fetchDistributorInfo, fetchStores, fetchProducts, fetchTeam]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -57,14 +71,14 @@ export default function SettingsModal({ onClose }) {
   const handleStoreSubmit = (event) => {
     event.preventDefault();
     addStore(storeDetails);
-    setStoreDetails({ name: "", location: "", phone: "" });
+    setStoreDetails({ name: "", location: "", phone: "", outstandingBalance: "" });
     setAddStoreOpen(false);
   };
 
   const handleProductSubmit = (event) => {
     event.preventDefault();
     addProduct(productDetails);
-    setProductDetails({ id: "", name: "", price: "" });
+    setProductDetails({ name: "", price: "" });
     setAddProductOpen(false);
   };
 
@@ -138,7 +152,9 @@ export default function SettingsModal({ onClose }) {
             </div>
             <div>
               <div className="text-[10px] uppercase tracking-wide text-slate-500">{t("teamCode")}</div>
-              <div className="mt-1 font-bold tracking-[0.18em] text-[#2563EB]">SHARMA24</div>
+              <div className="mt-1 font-bold tracking-[0.18em] text-[#2563EB]">
+                {distributorInfo?.distributor?.code || "LOADING..."}
+              </div>
             </div>
           </div>
         </div>
@@ -249,7 +265,7 @@ export default function SettingsModal({ onClose }) {
                 <div key={product.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-900/50">
                   <div className="min-w-0">
                     <div className="truncate text-sm font-semibold">{product.name}</div>
-                    <div className="text-xs text-slate-500">{product.id}</div>
+                    {product.code ? <div className="text-xs text-slate-500">{product.code}</div> : null}
                   </div>
                   <div className="shrink-0 text-sm font-semibold text-[#2563EB]">₹{product.price}</div>
                 </div>
@@ -343,6 +359,20 @@ export default function SettingsModal({ onClose }) {
                   />
                 </span>
               </label>
+
+              <label className="block text-sm font-semibold">
+                {t("outstandingBalance") || "Outstanding Amount"}
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={storeDetails.outstandingBalance}
+                  onChange={(event) => setStoreDetails({ ...storeDetails, outstandingBalance: event.target.value })}
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white/70 px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] dark:border-slate-700 dark:bg-slate-900/50"
+                  placeholder="e.g. 1500.50"
+                />
+              </label>
             </div>
 
             <div className="mt-6 flex justify-end gap-2">
@@ -392,16 +422,7 @@ export default function SettingsModal({ onClose }) {
             </div>
 
             <div className="mt-5 space-y-4">
-              <label className="block text-sm font-semibold">
-                {t("productId")}
-                <input
-                  required
-                  value={productDetails.id}
-                  onChange={(event) => setProductDetails({ ...productDetails, id: event.target.value })}
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white/70 px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] dark:border-slate-700 dark:bg-slate-900/50"
-                  placeholder="e.g. PROD-001"
-                />
-              </label>
+
 
               <label className="block text-sm font-semibold">
                 {t("productName")}

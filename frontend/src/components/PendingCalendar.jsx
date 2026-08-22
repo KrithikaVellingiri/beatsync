@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { pendingItemsByDate } from "../data/mockData";
 import StatusBadge from "./StatusBadge";
 import { useBeatSyncStore } from "../store/useBeatSyncStore";
 import { translate } from "../i18n";
@@ -34,8 +33,7 @@ export default function PendingCalendar({ onClose }) {
     return `${year}-${monthNumber}-${dayNumber}`;
   };
 
-  const pendingItems =
-    pendingItemsByDate[getDateKey(selectedDate.getDate())] || [];
+  const pendingItems = [];
 
   const previousMonth = () => {
     setSelectedDate(

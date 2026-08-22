@@ -12,10 +12,7 @@ import { useMemo, useState } from "react";
 
 import CollectionChart from "../components/CollectionChart";
 import StoreDetailDrawer from "../components/StoreDetailDrawer";
-import {
-  deliveryBoys,
-  stores,
-} from "../data/mockData";
+
 
 import {
   useBeatSyncStore,
@@ -38,9 +35,32 @@ export default function Ledger() {
     setSort,
     closedDays,
     closeDay,
-    language,
   } = useBeatSyncStore();
+  const dashboardData = useBeatSyncStore((state) => state.dashboardData);
+  const language = useBeatSyncStore((state) => state.language);
   const t = (key) => translate(language, key);
+
+  // Extract from dashboardData if available
+  const deliveryBoys = dashboardData?.deliveryBoys?.map(db => ({
+    ...db.deliveryBoy,
+    initials: db.deliveryBoy.name.substring(0,2).toUpperCase(),
+    expectedCash: 0,
+    submittedCash: 0,
+    returns: 0,
+    outstanding: 0,
+    discrepancy: 0,
+    dayClosed: false,
+  })) || [];
+
+  const stores = dashboardData?.stores?.map(s => ({
+    ...s,
+    outstanding: Number(s.outstandingBalance),
+    overdue: s.overdueDays,
+    lastPayment: "—",
+    activity: "—",
+    status: s.outstandingBalance > 15000 ? "Critical" : "Healthy",
+    boyId: -1, // Stores are not strictly bound to one boy globally without assignments
+  })) || [];
 
   const [storeFilter, setStoreFilter] =
     useState("all");
@@ -123,30 +143,14 @@ export default function Ledger() {
     selectedBoyData &&
     (selectedBoyData.dayClosed || closedDays[selectedBoy]);
 
+  const totalOutstandingSum = filteredStores.reduce((sum, s) => sum + s.outstanding, 0);
+  const totalCollectedSum = dashboardData?.summary?.totalPayments || 0;
+  const totalReturnsSum = dashboardData?.summary?.totalReturns || 0;
+  const discrepancySum = deliveryBoys.reduce((sum, boy) => sum + (boy.discrepancy || 0), 0);
+
 
   return (
     <div className="space-y-5">
-
-      {/* HEADER */}
-      <div className="flex items-end justify-between gap-4">
-
-        <div>
-
-          {/* <div className="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB] dark:text-blue-300">
-            Store-level operations
-          </div>
-
-          <h1 className="text-3xl font-extrabold tracking-tight mt-1">
-            Store Ledger
-          </h1> */}
-
-          <div className="text-xs font-extrabold uppercase tracking-[0.5em] text-[#000000] dark:text-blue-300">
-            {t("ledgerSubtitle")}
-          </div>
-
-        </div>
-
-      </div>
 
     {/* BOY RECONCILIATION */}
 {selectedBoy !== "all" && selectedBoyData && (
@@ -546,23 +550,23 @@ export default function Ledger() {
 
           <Total
             label={t("totalOutstanding")}
-            value="₹41,400"
+            value={`₹${totalOutstandingSum.toLocaleString("en-IN")}`}
           />
 
           <Total
             label={t("totalCollected")}
-            value="₹32,400"
+            value={`₹${totalCollectedSum.toLocaleString("en-IN")}`}
           />
 
           <Total
             label={t("totalReturns")}
-            value="₹5,230"
+            value={`₹${totalReturnsSum.toLocaleString("en-IN")}`}
           />
 
           <Total
             label={t("discrepancy")}
-            value="₹1,600"
-            danger
+            value={`₹${discrepancySum.toLocaleString("en-IN")}`}
+            danger={discrepancySum > 0}
           />
 
         </div>

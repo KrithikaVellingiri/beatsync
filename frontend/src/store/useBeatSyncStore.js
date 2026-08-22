@@ -1,51 +1,203 @@
 import { create } from "zustand";
-import { stores, deliveryBoys, } from "../data/mockData";
+import { api } from "../api/client";
 
-export const useBeatSyncStore = create((set) => ({
+export const useBeatSyncStore = create((set, get) => ({
   theme: localStorage.getItem("beatsync-theme") || "light",
   language: localStorage.getItem("beatsync-language") || "en",
 
-  beatGenerated: false,
-  beatPublished: false,
-    // --------------------------------
+  // --------------------------------
+  // DATA FETCHING
+  // --------------------------------
+  managedStores: [],
+  managedProducts: [],
+  deliveryBoys: [],
+  distributorInfo: null,
+  isLoadingStores: false,
+  isLoadingProducts: false,
+  
+  fetchDistributorInfo: async () => {
+    try {
+      const res = await api.get("/auth/me");
+      if (res.success) {
+        set({ distributorInfo: res.data.user });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  },
+
+  fetchStores: async () => {
+    set({ isLoadingStores: true });
+    try {
+      const res = await api.get("/stores");
+      if (res.success) {
+        set({ managedStores: res.data.stores });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      set({ isLoadingStores: false });
+    }
+  },
+
+  fetchProducts: async () => {
+    set({ isLoadingProducts: true });
+    try {
+      const res = await api.get("/skus");
+      if (res.success) {
+        set({ managedProducts: res.data.skus });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      set({ isLoadingProducts: false });
+    }
+  },
+
+
+
+  addStore: async (storeDetails) => {
+    try {
+      const res = await api.post("/stores", {
+        name: storeDetails.name,
+        locality: storeDetails.location,
+        phone: storeDetails.phone,
+        ownerName: storeDetails.ownerName || "",
+        outstandingBalance: storeDetails.outstandingBalance ? Number(storeDetails.outstandingBalance) : 0,
+      });
+      if (res.success) {
+        // Refresh stores
+        get().fetchStores();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  },
+
+  addProduct: async (productDetails) => {
+    try {
+      const payload = {
+        name: productDetails.name,
+        price: Number(productDetails.price) || 0,
+        unit: productDetails.unit || "unit",
+      };
+      if (productDetails.code) {
+        payload.code = productDetails.code;
+      }
+      const res = await api.post("/skus", payload);
+      if (res.success) {
+        // Refresh products
+        get().fetchProducts();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  },
+
+  // --------------------------------
   // BEAT GENERATOR STATE
   // --------------------------------
 
-  beatColumns: deliveryBoys.map((boy) => ({
-    ...boy,
-    assigned: [],
-  })),
-
+  beatGenerated: false,
+  beatPublished: false,
+  currentBeatId: null,
+  beatColumns: [],
   beatUnassigned: [],
-
   selectedBoy: "all",
   closedDays: {},
   selectedStore: null,
   search: "",
   sort: "highest",
+  assignedStores: {},
+  unassignedStores: [],
+  dashboardData: null,
+  distributorInfo: null,
+  deliveryBoys: [],
 
-  // --------------------------------
-  // BEAT ASSIGNMENTS
-  // --------------------------------
-
-  assignedStores: stores.reduce((acc, store) => {
-    if (store.boyId) {
-      if (!acc[store.boyId]) {
-        acc[store.boyId] = [];
+  fetchDistributorInfo: async () => {
+    try {
+      const res = await api.get("/auth/me");
+      if (res.success) {
+        set({ distributorInfo: res.data.user });
       }
-
-      acc[store.boyId].push(store.id);
+    } catch (err) {
+      console.error(err);
     }
+  },
 
-    return acc;
-  }, {}),
+  fetchTeam: async () => {
+    try {
+      const res = await api.get("/team");
+      if (res.success) {
+        set({ deliveryBoys: res.data.team });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  },
 
-  managedStores: JSON.parse(localStorage.getItem("beatsync-managed-stores") || "null") || stores,
-  managedProducts: JSON.parse(localStorage.getItem("beatsync-managed-products") || "null") || [],
+  fetchDashboardData: async () => {
+    try {
+      const res = await api.get("/dashboard/owner");
+      if (res.success) {
+        set({ dashboardData: res.data });
+        return res.data;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    return null;
+  },
 
-  unassignedStores: stores
-    .filter((store) => !store.boyId)
-    .map((store) => store.id),
+  generateBeat: async () => {
+    try {
+      // API call to backend to generate
+      const res = await api.post("/beats/generate");
+      if (res.success) {
+        set({
+          beatGenerated: true,
+          beatPublished: false,
+          currentBeatId: res.data.beat.id,
+        });
+        return res.data; // Return the generated beat to the component
+      } else if (res.message === "A beat already exists for this date") {
+        // fetch existing beat
+        const existingRes = await api.get(`/beats/${res.data.beatId}`);
+        if (existingRes.success) {
+          set({
+            beatGenerated: true,
+            beatPublished: existingRes.data.beat.status === "published",
+            currentBeatId: existingRes.data.beat.id,
+          });
+          return existingRes.data;
+        }
+      }
+      return res;
+    } catch (err) {
+      console.error(err);
+      return { success: false, message: err.message || "An error occurred" };
+    }
+  },
+
+  publishBeat: async () => {
+    try {
+      const { currentBeatId } = get();
+      if (!currentBeatId) return;
+      const res = await api.post(`/beats/${currentBeatId}/publish`);
+      if (res.success) {
+        set({
+          beatPublished: true,
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  },
+
+  // Client-side interactions for beat assignments (might need backend sync)
+  assignStore: (storeId, boyId) => {},
+  removeStore: (storeId, boyId) => {},
+  unassignStore: (storeId) => {},
 
   // --------------------------------
   // THEME
@@ -61,114 +213,9 @@ export const useBeatSyncStore = create((set) => ({
     set({ language });
   },
 
-  saveSettings: () =>
-    set((state) => {
-      localStorage.setItem("beatsync-managed-stores", JSON.stringify(state.managedStores));
-      localStorage.setItem("beatsync-managed-products", JSON.stringify(state.managedProducts));
+  saveSettings: () => {
       return { settingsSavedAt: Date.now() };
-    }),
-
-  // --------------------------------
-  // BEAT STATUS
-  // --------------------------------
-
-  generateBeat: () =>
-    set({
-      beatGenerated: true,
-      beatPublished: false,
-    }),
-
-  publishBeat: () =>
-    set({
-      beatPublished: true,
-    }),
-
-  // --------------------------------
-  // STORE ASSIGNMENT
-  // --------------------------------
-
-  assignStore: (storeId, boyId) =>
-    set((state) => {
-      const newAssigned = {
-        ...state.assignedStores,
-      };
-
-      // Remove store from every existing boy
-      Object.keys(newAssigned).forEach((id) => {
-        newAssigned[id] = newAssigned[id].filter(
-          (id) => id !== storeId
-        );
-      });
-
-      // Add store to selected boy
-      if (!newAssigned[boyId]) {
-        newAssigned[boyId] = [];
-      }
-
-      newAssigned[boyId] = [
-        ...newAssigned[boyId],
-        storeId,
-      ];
-
-      return {
-        assignedStores: newAssigned,
-
-        unassignedStores:
-          state.unassignedStores.filter(
-            (id) => id !== storeId
-          ),
-      };
-    }),
-
-  // --------------------------------
-  // REMOVE STORE FROM BOY
-  // --------------------------------
-
-  removeStore: (storeId, boyId) =>
-    set((state) => ({
-      assignedStores: {
-        ...state.assignedStores,
-        [boyId]: (
-          state.assignedStores[boyId] || []
-        ).filter((id) => id !== storeId),
-      },
-
-      unassignedStores: [
-        ...state.unassignedStores,
-        storeId,
-      ],
-    })),
-
-  // --------------------------------
-  // UNASSIGN STORE
-  // --------------------------------
-
-  unassignStore: (storeId) =>
-    set((state) => {
-      const newAssigned = {
-        ...state.assignedStores,
-      };
-
-      Object.keys(newAssigned).forEach((boyId) => {
-        newAssigned[boyId] =
-          newAssigned[boyId].filter(
-            (id) => id !== storeId
-          );
-      });
-
-      return {
-        assignedStores: newAssigned,
-
-        unassignedStores: state.unassignedStores.includes(
-          storeId
-        )
-          ? state.unassignedStores
-          : [
-              ...state.unassignedStores,
-              storeId,
-            ],
-      };
-    }),
+  },
 
   // --------------------------------
   // OTHER STATE
@@ -185,26 +232,6 @@ export const useBeatSyncStore = create((set) => ({
       },
     })),
 
-  addStore: (storeDetails) =>
-    set((state) => ({
-      managedStores: [
-        ...state.managedStores,
-        {
-          id: `STR-${String(state.managedStores.length + 1).padStart(3, "0")}`,
-          name: storeDetails.name,
-          area: storeDetails.location,
-          locality: storeDetails.location,
-          contact: storeDetails.phone,
-          status: "Healthy",
-        },
-      ],
-    })),
-
-  addProduct: (productDetails) =>
-    set((state) => ({
-      managedProducts: [...state.managedProducts, productDetails],
-    })),
-
   setSelectedStore: (selectedStore) =>
     set({ selectedStore }),
 
@@ -213,10 +240,6 @@ export const useBeatSyncStore = create((set) => ({
 
   setSort: (sort) =>
     set({ sort }),
-
-    // --------------------------------
-  // BEAT GENERATOR
-  // --------------------------------
 
   setBeatColumns: (beatColumns) =>
     set({ beatColumns }),

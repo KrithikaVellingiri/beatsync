@@ -15,8 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBeat } from "../../../context/BeatContext";
 import { useLanguage } from "../../../context/LanguageContext";
 import { useTheme } from "../../../context/ThemeContext";
-import { Store } from "../../../constants/mockStores";
-
+import { Store } from "../../../context/BeatContext";
 type Filter = "all" | "critical" | "outstanding" | "clear";
 
 const STATUS_LABEL: Record<Store["status"], string> = {

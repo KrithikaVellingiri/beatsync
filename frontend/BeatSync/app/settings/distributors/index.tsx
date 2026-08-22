@@ -12,20 +12,20 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { api } from "../../../api/client";
 import {
-  Distributor,
   useDistributor,
 } from "../../../context/DistributorContext";
 import { useTheme } from "../../../context/ThemeContext";
 
 export default function MyDistributors() {
   const { colors } = useTheme();
-  const { distributors, addDistributor } = useDistributor();
+  const { distributors, fetchDistributors } = useDistributor();
   const insets = useSafeAreaInsets();
 
   const [code, setCode] = React.useState("");
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     const teamCode = code.trim().toUpperCase();
 
     if (!teamCode) {
@@ -36,68 +36,37 @@ export default function MyDistributors() {
       return;
     }
 
-    // --------------------------------
-    // DUMMY DISTRIBUTOR LOOKUP
-    // --------------------------------
+    try {
+      const res = await api.post("/team/distributor/join", {
+        body: { code: teamCode },
+      });
 
-    if (teamCode !== "SHARMA24") {
+      if (res.success) {
+        Alert.alert(
+          "Joined Successfully",
+          `You have joined ${res.data.distributor.name}.`,
+          [
+            {
+              text: "Go to Home",
+              onPress: async () => {
+                await fetchDistributors();
+                router.replace("/(tabs)");
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          "Failed to Join",
+          res.message || "Invalid team code or you are already a member."
+        );
+      }
+    } catch (error) {
       Alert.alert(
-        "Invalid Team Code",
-        "Please check the code with your distributor."
+        "Network Error",
+        "Could not connect to the server."
       );
-      return;
     }
-
-    const distributor: Distributor = {
-      id: "1",
-      name: "Sharma Distributors",
-      location: "Chennai",
-      code: "SHARMA24",
-    };
-
-    // --------------------------------
-    // CONFIRM BEFORE JOINING
-    // --------------------------------
-
-    Alert.alert(
-      "Join Distributor?",
-      `${distributor.name}\n${distributor.location}\n\nTeam Code: ${distributor.code}`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Confirm & Join",
-          onPress: () => {
-            const alreadyJoined = distributors.some(
-              (item) => item.id === distributor.id
-            );
-
-            if (alreadyJoined) {
-              Alert.alert(
-                "Already Joined",
-                `You're already a member of ${distributor.name}.`
-              );
-              return;
-            }
-
-            addDistributor(distributor);
-
-            Alert.alert(
-              "Joined Successfully",
-              `You have joined ${distributor.name}.`,
-              [
-                {
-                  text: "Go to Home",
-                  onPress: () => router.replace("/(tabs)"),
-                },
-              ]
-            );
-          },
-        },
-      ]
-    );
   };
 
   return (

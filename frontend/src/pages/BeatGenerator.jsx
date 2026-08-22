@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import { beatStores, deliveryBoys } from "../data/mockData";
 import { useBeatSyncStore } from "../store/useBeatSyncStore";
 import StatusBadge from "../components/StatusBadge";
 import { translate } from "../i18n";
@@ -50,26 +49,36 @@ export default function BeatGenerator() {
 
   const [draggedStore, setDraggedStore] = useState(null);
 
- const generate = () => {
-  generateBeat();
+  const generate = async () => {
+    const data = await generateBeat();
+    if (!data) return;
 
-  const initialColumns = deliveryBoys.map((boy) => ({
-    ...boy,
-    assigned: [],
-  }));
-
-  beatStores.forEach((store, index) => {
-    if (index < beatStores.length - 2) {
-      const columnIndex =
-        index % deliveryBoys.length;
-
-      initialColumns[columnIndex].assigned.push(store);
+    if (data.success === false && data.message) {
+      alert(data.message);
+      return;
     }
-  });
 
-  setBeatColumns(initialColumns);
-  setBeatUnassigned(beatStores.slice(-2));
-};
+    if (!data.beat || !data.beat.assignments) return;
+
+    const mappedColumns = data.beat.assignments.map((assignment) => ({
+      id: assignment.deliveryBoy.id,
+      name: assignment.deliveryBoy.name,
+      phone: assignment.deliveryBoy.phone,
+      initials: assignment.deliveryBoy.name.substring(0, 2).toUpperCase(),
+      area: "Assigned Stores",
+      assigned: assignment.stores.map((st) => ({
+        ...st.store,
+        outstanding: Number(st.store.outstandingBalance),
+        lastVisited: st.store.lastVisitedAt ? "Recently" : "—",
+        daysSinceVisit: st.overdueDaysSnapshot,
+        status: st.riskLevel,
+        locality: st.store.locality,
+      })),
+    }));
+
+    setBeatColumns(mappedColumns);
+    setBeatUnassigned([]);
+  };
 
   const handleDragStart = (store, sourceColumn = null) => {
   setDraggedStore({
@@ -268,10 +277,8 @@ const handleDropOnUnassigned = () => {
   [beatColumns]
 );
 
-  const handlePublish = () => {
-
-    publishBeat();
-
+  const handlePublish = async () => {
+    await publishBeat();
     setTimeout(() => {
       navigate("/dashboard");
     }, 350);
@@ -280,50 +287,38 @@ const handleDropOnUnassigned = () => {
   return (
     <div className="space-y-5">
 
-      {/* PAGE INTRO */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-
-        <div>
-          <div className="text-xs font-bold uppercase tracking-[0.75em] text-black-700 dark:text-blue-300">
-            {t("dailyRoutePlanning")}
-          </div>
-
-         
-
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-2xl">
-            {t("routePlanningSubtitle")}
-          </p>
-        </div>
-
-        <button
-          onClick={generate}
-          className="pill inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#2563EB] hover:bg-[#005b57] text-white font-semibold shadow-lg shadow-blue-900/10 transition"
-        >
-          <Sparkles size={17} />
-
-          {beatGenerated
-            ? t("regenerateBeat")
-            : t("generateTodaysBeat")}
-        </button>
-
-      </div>
-
 
       {/* EMPTY STATE */}
       {!beatGenerated && (
-        <div className="glass rounded-[22px] border border-slate-200 dark:border-slate-800 p-12 text-center">
+        <div className="glass rounded-[22px] border border-slate-200 dark:border-slate-800 flex flex-col" style={{ minHeight: 'calc(100vh - 120px)' }}>
 
-          <div className="w-14 h-14 mx-auto rounded-2xl bg-blue-50 text-[#2563EB] dark:bg-blue-950/40 dark:text-blue-300 grid place-items-center">
-            <CalendarDays size={25} />
+          {/* centered content group */}
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-12">
+
+            <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#2563EB] dark:bg-blue-950/40 dark:text-blue-300 grid place-items-center">
+              <CalendarDays size={25} />
+            </div>
+
+            <h2 className="font-bold text-lg mt-4">
+              {t("readyToCreateBeat")}
+            </h2>
+
+            <p className="text-sm text-slate-500 mt-2 max-w-md">
+              {t("generatePlan")}
+            </p>
+
           </div>
 
-          <h2 className="font-bold text-lg mt-4">
-            {t("readyToCreateBeat")}
-          </h2>
-
-          <p className="text-sm text-slate-500 mt-2 max-w-md mx-auto">
-            {t("generatePlan")}
-          </p>
+          {/* Generate button — bottom-right */}
+          <div className="flex justify-end px-6 pb-6">
+            <button
+              onClick={generate}
+              className="pill inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#2563EB] hover:bg-[#005b57] text-white font-semibold shadow-lg shadow-blue-900/10 transition"
+            >
+              <Sparkles size={17} />
+              {t("generateTodaysBeat")}
+            </button>
+          </div>
 
         </div>
       )}

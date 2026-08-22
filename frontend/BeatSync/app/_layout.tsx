@@ -38,15 +38,19 @@ function RootStack() {
   );
 }
 
+import { AuthProvider } from "../context/AuthContext";
+
 export default function RootLayout() {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <BeatProvider>
+        <AuthProvider>
           <DistributorProvider>
-            <RootStack />
+            <BeatProvider>
+              <RootStack />
+            </BeatProvider>
           </DistributorProvider>
-        </BeatProvider>
+        </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>
   );

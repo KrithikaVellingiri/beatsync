@@ -95,4 +95,38 @@ async function joinDistributor(req, res, next) {
   }
 }
 
-module.exports = { previewDistributor, listMyDistributors, joinDistributor };
+async function getDistributorTeam(req, res, next) {
+  try {
+    if (req.user.role !== "owner") {
+       return res.status(403).json({ success: false, message: "Only owners can view the team" });
+    }
+    
+    const team = await prisma.user.findMany({
+      where: {
+        memberships: {
+          some: {
+            distributorId: req.user.distributorId,
+            status: "active",
+          },
+        },
+        role: "delivery_boy",
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    return res.json({ success: true, data: { team } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { previewDistributor, listMyDistributors, joinDistributor, getDistributorTeam };

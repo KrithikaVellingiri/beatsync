@@ -23,7 +23,14 @@ export default function Topbar({ onAsk }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const location = useLocation();
   const language = useBeatSyncStore((state) => state.language);
+  const distributorInfo = useBeatSyncStore((state) => state.distributorInfo);
   const t = (key) => translate(language, key);
+
+  const businessName = distributorInfo?.distributor?.name || "Business";
+  const ownerName = distributorInfo?.name || "Owner";
+  const initials = ownerName.substring(0,2).toUpperCase();
+  const phone = distributorInfo?.phone || "";
+  const email = distributorInfo?.email || "";
 
   const title =
     location.pathname.includes("beat")
@@ -54,7 +61,7 @@ export default function Topbar({ onAsk }) {
         <div>
 
           <div className="text-[10px] text-white/65">
-            Sharma Distributors
+            {businessName}
           </div>
 
           <div className="font-bold">
@@ -112,7 +119,7 @@ export default function Topbar({ onAsk }) {
             aria-expanded={profileOpen}
             title="Owner profile"
           >
-            SJ
+            {initials}
           </button>
 
           {profileOpen && (
@@ -120,10 +127,10 @@ export default function Topbar({ onAsk }) {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-full bg-blue-100 text-[#2563eb] grid place-items-center font-bold">
-                    SJ
+                    {initials}
                   </div>
                   <div>
-                    <div className="font-bold">Sharma ji</div>
+                    <div className="font-bold">{ownerName}</div>
                     <div className="text-xs text-slate-500">Owner</div>
                   </div>
                 </div>
@@ -142,7 +149,7 @@ export default function Topbar({ onAsk }) {
                   <Building2 size={16} className="text-[#2563eb]" />
                   <div>
                     <div className="text-[10px] uppercase tracking-wide text-slate-500">{t("business")}</div>
-                    <div className="font-semibold">Sharma Distributors</div>
+                    <div className="font-semibold">{businessName}</div>
                   </div>
                 </div>
 
@@ -150,7 +157,7 @@ export default function Topbar({ onAsk }) {
                   <UserRound size={16} className="text-[#2563eb]" />
                   <div>
                     <div className="text-[10px] uppercase tracking-wide text-slate-500">{t("ownerName")}</div>
-                    <div className="font-semibold">Sharma ji</div>
+                    <div className="font-semibold">{ownerName}</div>
                   </div>
                 </div>
 
@@ -158,21 +165,25 @@ export default function Topbar({ onAsk }) {
                   <Mail size={16} className="text-[#2563eb]" />
                   <div className="min-w-0">
                     <div className="text-[10px] uppercase tracking-wide text-slate-500">{t("emailAddress")}</div>
-                    <div className="font-semibold truncate">sharma.distributors@example.com</div>
+                    <div className="font-semibold truncate">{email || "Not provided"}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone size={16} className="text-[#2563eb]" />
                   <div>
                     <div className="text-[10px] uppercase tracking-wide text-slate-500">{t("phoneNumber")}</div>
-                    <div className="font-semibold">+91 98765 43210</div>
+                    <div className="font-semibold">{phone}</div>
                   </div>
                 </div>
               </div>
 
               <div className="mt-4 border-t border-slate-200 dark:border-slate-800 pt-4">
                 <button
-                  onClick={() => setProfileOpen(false)}
+                  onClick={() => {
+                    localStorage.removeItem("jwt_token");
+                    setProfileOpen(false);
+                    window.location.href = "http://localhost:8081/?logout=true";
+                  }}
                   className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
                   {t("logout")}

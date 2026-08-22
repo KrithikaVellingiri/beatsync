@@ -49,7 +49,18 @@ app.use((req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error(err);
+  // Log full detail so Prisma/DB errors are visible in the terminal
+  console.error("[ERROR]", err.message || err);
+  if (err.code) console.error("[ERROR CODE]", err.code);
+  if (err.stack) console.error(err.stack);
+
+  // Surface Prisma unique-constraint violations as 409
+  if (err.code === "P2002") {
+    return res.status(409).json({
+      success: false,
+      message: "A record with that value already exists.",
+    });
+  }
 
   res.status(500).json({
     success: false,

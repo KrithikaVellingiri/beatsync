@@ -4,6 +4,7 @@ const {
   registerOwner,
   registerDeliveryBoy,
   login,
+  googleAuth,
   me,
 } = require("../controllers/auth.controller");
 
@@ -16,6 +17,8 @@ router.post("/register-owner", registerOwner);
 router.post("/register-delivery-boy", registerDeliveryBoy);
 
 router.post("/login", login);
+
+router.post("/google", googleAuth);
 
 router.get(
   "/me",
