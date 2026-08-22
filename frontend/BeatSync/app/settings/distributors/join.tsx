@@ -64,14 +64,14 @@ export default function JoinDistributor() {
           onPress: async () => {
             try {
                const res = await api.post("/team/distributor/join", {
-                 body: { code },
+                 body: { teamCode: code },
                });
                if (res.success) {
                  Alert.alert("Success", "You have joined the distributor.");
-                 
+
                  // Fetch latest distributors
                  if (fetchDistributors) await fetchDistributors();
-                 
+
                  // Set it as selected
                  const newDistributor = {
                     id: res.data.membership.distributor.id.toString(),
@@ -82,7 +82,7 @@ export default function JoinDistributor() {
                  if (selectDistributor) {
                     await selectDistributor(newDistributor);
                  }
-                 
+
                  router.navigate("/(tabs)/home");
                } else {
                  Alert.alert("Failed", res.message || "Invalid team code.");

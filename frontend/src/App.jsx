@@ -5,10 +5,13 @@ import BeatGenerator from "./pages/BeatGenerator";
 import Dashboard from "./pages/Dashboard";
 import Ledger from "./pages/Ledger";
 import SettingsModal from "./components/SettingsModal";
+import DeliveryPartner from "./pages/DeliveryPartner";
+import { api } from "./api/client";
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -17,19 +20,22 @@ export default function App() {
 
     if (tokenFromUrl) {
       localStorage.setItem("jwt_token", tokenFromUrl);
-      // Remove token from URL without reloading the page
       window.history.replaceState({}, document.title, location.pathname);
-      setIsAuthenticated(true);
-      setIsLoading(false);
-    } else {
-      const storedToken = localStorage.getItem("jwt_token");
-      if (storedToken) {
-        setIsAuthenticated(true);
-        setIsLoading(false);
-      } else {
-        setIsLoading(false); // done loading — not authenticated
-      }
     }
+
+    const storedToken = localStorage.getItem("jwt_token");
+    if (!storedToken) {
+      setIsLoading(false);
+      return;
+    }
+
+    api.get("/auth/me")
+      .then((response) => {
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+      })
+      .catch(() => setIsAuthenticated(false))
+      .finally(() => setIsLoading(false));
   }, [location.search]);
 
   if (isLoading) {
@@ -40,6 +46,10 @@ export default function App() {
     // Not authenticated — send back to Expo login portal
     window.location.href = "http://localhost:8081/";
     return null;
+  }
+
+  if (user?.role === "delivery_boy") {
+    return <DeliveryPartner />;
   }
 
   return (

@@ -9,7 +9,6 @@ import {
 import { useBeat } from "../../context/BeatContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { useTheme } from "../../context/ThemeContext";
-
 import { useEffect, useState } from "react";
 import { api } from "../../api/client";
 import { useDistributor } from "../../context/DistributorContext";
