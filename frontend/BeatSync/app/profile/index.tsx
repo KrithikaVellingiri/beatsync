@@ -117,7 +117,7 @@ export default function Profile() {
           ]}
         >
           <Pressable
-            onPress={() => router.push("/settings")}
+            onPress={() => router.navigate("/settings")}
             style={styles.menuRow}
           >
             <View

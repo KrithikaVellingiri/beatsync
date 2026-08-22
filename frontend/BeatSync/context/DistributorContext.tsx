@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import { api } from "../api/client";
+import { useAuth } from "./AuthContext";
 
 export type Distributor = {
   id: string;
@@ -19,7 +20,7 @@ type DistributorContextType = {
   selectedDistributor: Distributor | null;
 
   fetchDistributors: () => Promise<void>;
-  selectDistributor: (distributor: Distributor) => void;
+  selectDistributor: (distributor: Distributor) => Promise<void>;
   removeDistributor: (id: string) => void;
 };
 
@@ -27,13 +28,13 @@ const DistributorContext = createContext<
   DistributorContextType | undefined
 >(undefined);
 
-const STORAGE_KEY = "beatsync_distributors";
 
 export function DistributorProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { token, role } = useAuth();
   const [distributors, setDistributors] = useState<Distributor[]>([]);
   const [selectedDistributor, setSelectedDistributor] =
     useState<Distributor | null>(null);
@@ -49,6 +50,21 @@ export function DistributorProvider({
           code: membership.distributor.code,
         }));
         setDistributors(mapped);
+        
+        const storedId = await AsyncStorage.getItem("distributor_id");
+        let toSelect = null;
+
+        if (storedId) {
+          toSelect = mapped.find((d: Distributor) => d.id === storedId);
+        }
+
+        if (!toSelect && mapped.length > 0) {
+          toSelect = mapped[0];
+        }
+
+        if (toSelect) {
+          setSelectedDistributor(toSelect);
+        }
       }
     } catch (error) {
       console.log("Failed to fetch distributors:", error);
@@ -56,11 +72,17 @@ export function DistributorProvider({
   };
 
   useEffect(() => {
-    fetchDistributors();
-  }, []);
+    if (token && role === "delivery_boy") {
+      fetchDistributors();
+    } else if (!token) {
+      setDistributors([]);
+      setSelectedDistributor(null);
+    }
+  }, [token, role]);
 
-  const selectDistributor = (distributor: Distributor) => {
+  const selectDistributor = async (distributor: Distributor) => {
     setSelectedDistributor(distributor);
+    await AsyncStorage.setItem("distributor_id", distributor.id);
   };
 
   const removeDistributor = (id: string) => {

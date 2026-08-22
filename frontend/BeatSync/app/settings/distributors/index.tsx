@@ -20,7 +20,7 @@ import { useTheme } from "../../../context/ThemeContext";
 
 export default function MyDistributors() {
   const { colors } = useTheme();
-  const { distributors, fetchDistributors } = useDistributor();
+  const { distributors, fetchDistributors, selectDistributor } = useDistributor();
   const insets = useSafeAreaInsets();
 
   const [code, setCode] = React.useState("");
@@ -44,13 +44,22 @@ export default function MyDistributors() {
       if (res.success) {
         Alert.alert(
           "Joined Successfully",
-          `You have joined ${res.data.distributor.name}.`,
+          `You have joined ${res.data.membership.distributor.name}.`,
           [
             {
               text: "Go to Home",
               onPress: async () => {
                 await fetchDistributors();
-                router.replace("/(tabs)");
+                const newDistributor = {
+                  id: res.data.membership.distributor.id.toString(),
+                  name: res.data.membership.distributor.name,
+                  location: "Location not provided",
+                  code: res.data.membership.distributor.code,
+                };
+                if (selectDistributor) {
+                  await selectDistributor(newDistributor);
+                }
+                router.navigate("/(tabs)/home");
               },
             },
           ]

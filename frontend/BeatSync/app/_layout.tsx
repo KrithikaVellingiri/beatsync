@@ -31,7 +31,6 @@ function RootStack() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="profile" />
         <Stack.Screen name="settings" />
-        <Stack.Screen name="distributor" />
         <Stack.Screen name="store" />
       </Stack>
     </>

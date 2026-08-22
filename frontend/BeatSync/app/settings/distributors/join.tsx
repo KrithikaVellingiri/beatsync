@@ -19,7 +19,7 @@ import { api } from "../../../api/client";
 
 export default function JoinDistributor() {
   const { colors } = useTheme();
-  const { distributors } = useDistributor();
+  const { distributors, fetchDistributors, selectDistributor } = useDistributor();
   const insets = useSafeAreaInsets();
 
   const [teamCode, setTeamCode] = React.useState("");
@@ -68,7 +68,22 @@ export default function JoinDistributor() {
                });
                if (res.success) {
                  Alert.alert("Success", "You have joined the distributor.");
-                 router.back();
+                 
+                 // Fetch latest distributors
+                 if (fetchDistributors) await fetchDistributors();
+                 
+                 // Set it as selected
+                 const newDistributor = {
+                    id: res.data.membership.distributor.id.toString(),
+                    name: res.data.membership.distributor.name,
+                    location: "Location not provided",
+                    code: res.data.membership.distributor.code,
+                 };
+                 if (selectDistributor) {
+                    await selectDistributor(newDistributor);
+                 }
+                 
+                 router.navigate("/(tabs)/home");
                } else {
                  Alert.alert("Failed", res.message || "Invalid team code.");
                }

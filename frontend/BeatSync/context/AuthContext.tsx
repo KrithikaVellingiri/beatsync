@@ -136,7 +136,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else if (newRole === "delivery_boy") {
       // New signup → join distributor settings; existing login → home tabs
       if (isNewUser) {
-        router.replace("/settings/distributors" as any);
+        router.replace("/(tabs)/home");
+        setTimeout(() => {
+          router.push("/settings/distributors");
+        }, 100);
       } else {
         router.replace("/(tabs)/home");
       }

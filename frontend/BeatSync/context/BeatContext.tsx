@@ -126,10 +126,14 @@ export function BeatProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (selectedDistributor) {
+      setStores([]);
+      setProducts([]);
+      setCompletedTransactions([]);
       fetchMyBeat();
     } else {
       setStores([]);
       setProducts([]);
+      setCompletedTransactions([]);
     }
   }, [selectedDistributor]);
 

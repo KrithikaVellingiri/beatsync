@@ -6,13 +6,13 @@ import {
   View,
 } from "react-native";
 
-import { useBeat } from "../../../context/BeatContext";
-import { useLanguage } from "../../../context/LanguageContext";
-import { useTheme } from "../../../context/ThemeContext";
+import { useBeat } from "../../context/BeatContext";
+import { useLanguage } from "../../context/LanguageContext";
+import { useTheme } from "../../context/ThemeContext";
 
 import { useEffect, useState } from "react";
-import { api } from "../../../api/client";
-import { useDistributor } from "../../../context/DistributorContext";
+import { api } from "../../api/client";
+import { useDistributor } from "../../context/DistributorContext";
 
 export default function Day() {
   const { colors } = useTheme();

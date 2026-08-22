@@ -9,10 +9,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useBeat } from "../../../context/BeatContext";
-import { useLanguage } from "../../../context/LanguageContext";
-import { useTheme } from "../../../context/ThemeContext";
-import { Store } from "../../../context/BeatContext";
+import { useBeat } from "../../context/BeatContext";
+import { useLanguage } from "../../context/LanguageContext";
+import { useTheme } from "../../context/ThemeContext";
+import { Store } from "../../context/BeatContext";
 const STATUS_LABEL: Record<Store["status"], string> = {
   critical: "CRITICAL",
   clear: "CLEAR",

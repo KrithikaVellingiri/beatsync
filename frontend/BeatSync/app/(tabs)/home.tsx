@@ -14,19 +14,14 @@ import { useTheme } from "../../context/ThemeContext";
 
 export default function Home() {
   const { colors } = useTheme();
-  const { distributors, selectDistributor } = useDistributor();
+  const { distributors, selectedDistributor, selectDistributor } = useDistributor();
   const insets = useSafeAreaInsets();
 
-  const handleDistributorPress = (id: string) => {
+  const handleDistributorPress = async (id: string) => {
     const distributor = distributors.find((item) => item.id === id);
-
     if (!distributor) return;
-
-    // Remember which distributor the user selected
-    selectDistributor(distributor);
-
-    // For now, open the distributor workspace
-    router.push(`/distributor/${id}/beat`);
+    await selectDistributor(distributor);
+    router.push("/(tabs)/beat");
   };
 
   return (
@@ -42,221 +37,117 @@ export default function Home() {
       {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.headerText}>
-          <Text
-            style={[
-              styles.greeting,
-              { color: colors.textSecondary },
-            ]}
-          >
-            Good morning
-          </Text>
-
-          <Text
-            style={[
-              styles.name,
-              { color: colors.text },
-            ]}
-          >
-            Welcome 👋
-          </Text>
+          <Text style={[styles.greeting, { color: colors.textSecondary }]}>Good morning</Text>
+          <Text style={[styles.name, { color: colors.text }]}>Welcome 👋</Text>
         </View>
 
         <Pressable
-          onPress={() => router.push("/profile")}
+          onPress={() => router.navigate("/profile")}
           hitSlop={12}
           style={({ pressed }) => [
             styles.profileButton,
-            {
-              opacity: pressed ? 0.55 : 1,
-            },
+            { opacity: pressed ? 0.55 : 1 },
           ]}
         >
-          <Ionicons
-            name="person-outline"
-            size={27}
-            color={colors.text}
-          />
+          <Ionicons name="person-outline" size={27} color={colors.text} />
         </Pressable>
       </View>
 
-      {/* TITLE */}
-      <View style={styles.sectionHeader}>
-        <Text
-          style={[
-            styles.sectionTitle,
-            { color: colors.text },
-          ]}
-        >
-          Your Distributors
-        </Text>
-
-        <Text
-          style={[
-            styles.sectionSubtitle,
-            { color: colors.textSecondary },
-          ]}
-        >
-          Manage the distributors you work with
-        </Text>
-      </View>
-
-      {/* DISTRIBUTOR LIST */}
+      {/* DASHBOARD VIEW OR EMPTY STATE */}
       {distributors.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <View
-            style={[
-              styles.emptyIcon,
-              {
-                backgroundColor: colors.surfaceAlt,
-              },
-            ]}
-          >
-            <Ionicons
-              name="business-outline"
-              size={32}
-              color={colors.primary}
-            />
+          <View style={[styles.emptyIcon, { backgroundColor: colors.surfaceAlt }]}>
+            <Ionicons name="business-outline" size={32} color={colors.primary} />
           </View>
-
-          <Text
-            style={[
-              styles.emptyTitle,
-              { color: colors.text },
-            ]}
-          >
-            No distributors yet
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>No distributors yet</Text>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+            Add a distributor to start managing your beats and stores.
           </Text>
-
-          <Text
-            style={[
-              styles.emptyText,
-              { color: colors.textSecondary },
-            ]}
-          >
-            Add a distributor to start managing your
-            beats and stores.
-          </Text>
-
           <Pressable
             onPress={() => router.push("/settings/distributors")}
             style={({ pressed }) => [
               styles.addButton,
-              {
-                backgroundColor: colors.primary,
-                opacity: pressed ? 0.82 : 1,
-              },
+              { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
             ]}
           >
-            <Ionicons
-              name="add"
-              size={20}
-              color="#FFFFFF"
-            />
+            <Ionicons name="add" size={20} color="#FFFFFF" />
+            <Text style={styles.addButtonText}>Join a Distributor</Text>
+          </Pressable>
+        </View>
+      ) : selectedDistributor ? (
+        <View style={styles.dashboardContainer}>
+          <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>Today's Work</Text>
+          
+          <Pressable
+            onPress={() => {
+              // Option to change distributor if there are multiple
+              if (distributors.length > 1) {
+                // In a real app, open a modal. For now, clear selection to show list.
+                selectDistributor(null as any);
+              }
+            }}
+            style={[styles.distributorSelector, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          >
+            <Ionicons name="business-outline" size={20} color={colors.primary} />
+            <Text style={[styles.selectorText, { color: colors.text }]}>{selectedDistributor.name}</Text>
+            {distributors.length > 1 && <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />}
+          </Pressable>
 
-            <Text style={styles.addButtonText}>
-              Add Distributor
-            </Text>
+          <View style={[styles.beatCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.beatIconContainer, { backgroundColor: colors.surfaceAlt }]}>
+              <Ionicons name="calendar-outline" size={28} color={colors.primary} />
+            </View>
+            <View style={styles.beatInfo}>
+              <Text style={[styles.beatTitle, { color: colors.text }]}>Today's Beat</Text>
+              <Text style={[styles.beatSubtitle, { color: colors.textSecondary }]}>Ready for execution</Text>
+            </View>
+          </View>
+
+          <Pressable
+            onPress={() => router.push("/beat")}
+            style={({ pressed }) => [
+              styles.actionButton,
+              { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
+            ]}
+          >
+            <Text style={styles.actionButtonText}>View Beat</Text>
+            <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
           </Pressable>
         </View>
       ) : (
-        <FlatList
-          data={distributors}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.listContent,
-            {
-              paddingBottom: insets.bottom + 30,
-            },
-          ]}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => handleDistributorPress(item.id)}
-              style={({ pressed }) => [
-                styles.distributorCard,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                  opacity: pressed ? 0.82 : 1,
-                },
-              ]}
-            >
-              <View
-                style={[
-                  styles.distributorIcon,
-                  {
-                    backgroundColor: colors.surfaceAlt,
-                  },
+        <View style={{ flex: 1 }}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Select Distributor</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>Choose a distributor to continue</Text>
+          </View>
+          <FlatList
+            data={distributors}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 30 }]}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => handleDistributorPress(item.id)}
+                style={({ pressed }) => [
+                  styles.distributorCard,
+                  { backgroundColor: colors.surface, borderColor: colors.border, opacity: pressed ? 0.82 : 1 },
                 ]}
               >
-                <Ionicons
-                  name="business-outline"
-                  size={24}
-                  color={colors.primary}
-                />
-              </View>
-
-              <View style={styles.distributorInfo}>
-                <Text
-                  style={[
-                    styles.distributorName,
-                    { color: colors.text },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {item.name}
-                </Text>
-
-                <View style={styles.locationRow}>
-                  <Ionicons
-                    name="location-outline"
-                    size={14}
-                    color={colors.textSecondary}
-                  />
-
-                  <Text
-                    style={[
-                      styles.location,
-                      {
-                        color: colors.textSecondary,
-                      },
-                    ]}
-                  >
-                    {item.location}
-                  </Text>
+                <View style={[styles.distributorIcon, { backgroundColor: colors.surfaceAlt }]}>
+                  <Ionicons name="business-outline" size={24} color={colors.primary} />
                 </View>
-
-                <View style={styles.activeRow}>
-                  <View
-                    style={[
-                      styles.activeDot,
-                      {
-                        backgroundColor: colors.success,
-                      },
-                    ]}
-                  />
-
-                  <Text
-                    style={[
-                      styles.activeText,
-                      {
-                        color: colors.success,
-                      },
-                    ]}
-                  >
-                    Active
-                  </Text>
+                <View style={styles.distributorInfo}>
+                  <Text style={[styles.distributorName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
+                  <View style={styles.locationRow}>
+                    <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
+                    <Text style={[styles.location, { color: colors.textSecondary }]}>{item.location}</Text>
+                  </View>
                 </View>
-              </View>
-
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={colors.textSecondary}
-              />
-            </Pressable>
-          )}
-        />
+                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+              </Pressable>
+            )}
+          />
+        </View>
       )}
     </View>
   );
@@ -424,5 +315,74 @@ const styles = StyleSheet.create({
   activeText: {
     fontSize: 12,
     fontWeight: "700",
+  },
+
+  dashboardContainer: {
+    flex: 1,
+    paddingHorizontal: 22,
+  },
+
+  distributorSelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+    marginBottom: 24,
+  },
+
+  selectorText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  beatCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 24,
+  },
+
+  beatIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+  },
+
+  beatInfo: {
+    flex: 1,
+  },
+
+  beatTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+  },
+
+  beatSubtitle: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    height: 56,
+    borderRadius: 16,
+  },
+
+  actionButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "800",
   },
 });
