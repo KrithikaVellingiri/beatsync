@@ -312,6 +312,9 @@ export default function Beat() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    maxWidth: 800,
+    width: "100%",
+    alignSelf: "center",
   },
 
   /* =========================

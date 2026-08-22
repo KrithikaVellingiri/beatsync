@@ -26,7 +26,7 @@ export default function Home() {
     selectDistributor(distributor);
 
     // For now, open the distributor workspace
-    router.push("../distributor/beat");
+    router.push(`/distributor/${id}/beat`);
   };
 
   return (
@@ -265,6 +265,9 @@ export default function Home() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    maxWidth: 800,
+    width: "100%",
+    alignSelf: "center",
   },
 
   header: {

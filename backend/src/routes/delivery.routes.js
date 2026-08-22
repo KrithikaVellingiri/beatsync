@@ -15,6 +15,7 @@ const {
   addReturn,
   addCreditPromise,
   getOwnerContact,
+  getMyDaySummary,
 } = require("../controllers/delivery.controller");
 
 const {
@@ -36,6 +37,12 @@ router.get(
   "/my-beat",
   authorize("delivery_boy"),
   getMyBeat
+);
+
+router.get(
+  "/my-beat/summary",
+  authorize("delivery_boy"),
+  getMyDaySummary
 );
 
 // ---------------------------------------------------------

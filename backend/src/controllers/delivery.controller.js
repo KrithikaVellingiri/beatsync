@@ -1510,6 +1510,101 @@ async function getOwnerContact(req, res, next) {
     next(err);
   }
 }
+
+async function getMyDaySummary(req, res, next) {
+  try {
+    const deliveryBoyId = req.user.id;
+    const distributorId = req.context.distributorId;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const beat = await prisma.beat.findFirst({
+      where: {
+        distributorId,
+        date: {
+          gte: today,
+          lt: tomorrow,
+        },
+        status: "published",
+      },
+      include: {
+        assignments: {
+          where: {
+            deliveryBoyId,
+          },
+          include: {
+            stores: {
+              include: {
+                visit: {
+                  include: {
+                    payments: true,
+                    returnItems: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!beat || beat.assignments.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          assigned: 0,
+          completed: 0,
+          remaining: 0,
+          collection: 0,
+          returns: 0,
+          completionPercentage: 0,
+        },
+      });
+    }
+
+    const assignment = beat.assignments[0];
+    const totalAssigned = assignment.stores.length;
+    let completed = 0;
+    let collection = 0;
+    let returns = 0;
+
+    for (const store of assignment.stores) {
+      if (store.visit && store.visit.status === "completed") {
+        completed++;
+        for (const payment of store.visit.payments) {
+           if (payment.status !== "failed") {
+              collection += Number(payment.amount);
+           }
+        }
+        for (const ret of store.visit.returnItems) {
+           returns += Number(ret.quantity);
+        }
+      }
+    }
+
+    const remaining = totalAssigned - completed;
+    const completionPercentage = totalAssigned === 0 ? 0 : Math.round((completed / totalAssigned) * 100);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        assigned: totalAssigned,
+        completed,
+        remaining,
+        collection,
+        returns,
+        completionPercentage,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getMyBeat,
   getVisitDetails,
@@ -1525,4 +1620,5 @@ module.exports = {
   addCreditPromise,
   completeVisit,
   getOwnerContact,
+  getMyDaySummary,
 };

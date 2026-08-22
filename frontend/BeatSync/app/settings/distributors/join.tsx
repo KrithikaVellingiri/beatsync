@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useDistributor } from "../../../context/DistributorContext";
 import { useTheme } from "../../../context/ThemeContext";
+import { api } from "../../../api/client";
 
 export default function JoinDistributor() {
   const { colors } = useTheme();
@@ -35,20 +36,7 @@ export default function JoinDistributor() {
     }
 
     /*
-     * TEMPORARY FRONTEND FLOW
-     *
-     * Later:
-     *
-     * POST /api/team/distributor/preview/:code
-     *
-     * The backend will return:
-     *
-     * {
-     *   id,
-     *   name,
-     *   location,
-     *   code
-     * }
+     * POST /api/team/distributor/join
      */
 
     const existingDistributor = distributors.find(
@@ -63,18 +51,9 @@ export default function JoinDistributor() {
       return;
     }
 
-    // Temporary demo distributor.
-    // REMOVE this when backend is connected.
-    const previewDistributor = {
-      id: `demo-${code}`,
-      name: "Sharma Distributors",
-      location: "Chennai",
-      code,
-    };
-
     Alert.alert(
       "Join Distributor?",
-      `${previewDistributor.name}\n${previewDistributor.location}\n\nTeam Code: ${previewDistributor.code}`,
+      `Are you sure you want to join this team code: ${code}?`,
       [
         {
           text: "Cancel",
@@ -82,16 +61,20 @@ export default function JoinDistributor() {
         },
         {
           text: "Confirm & Join",
-          onPress: () => {
-            /*
-             * Backend step will eventually happen here:
-             *
-             * POST /api/team/distributor/join
-             *
-             * After successful response:
-             * addDistributor(distributor)
-             */
-            router.back();
+          onPress: async () => {
+            try {
+               const res = await api.post("/team/distributor/join", {
+                 body: { code },
+               });
+               if (res.success) {
+                 Alert.alert("Success", "You have joined the distributor.");
+                 router.back();
+               } else {
+                 Alert.alert("Failed", res.message || "Invalid team code.");
+               }
+            } catch (err) {
+               Alert.alert("Network Error", "Could not connect to the server.");
+            }
           },
         },
       ]
@@ -236,6 +219,9 @@ export default function JoinDistributor() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    maxWidth: 800,
+    width: "100%",
+    alignSelf: "center",
   },
 
   header: {

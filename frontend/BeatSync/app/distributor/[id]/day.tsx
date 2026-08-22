@@ -10,36 +10,52 @@ import { useBeat } from "../../../context/BeatContext";
 import { useLanguage } from "../../../context/LanguageContext";
 import { useTheme } from "../../../context/ThemeContext";
 
+import { useEffect, useState } from "react";
+import { api } from "../../../api/client";
+import { useDistributor } from "../../../context/DistributorContext";
+
 export default function Day() {
   const { colors } = useTheme();
   const { lang } = useLanguage();
+  const { selectedDistributor } = useDistributor();
+
+  const [summaryData, setSummaryData] = useState({
+    assigned: 0,
+    completed: 0,
+    remaining: 0,
+    collection: 0,
+    returns: 0,
+    completionPercentage: 0,
+  });
+
+  useEffect(() => {
+    async function fetchSummary() {
+      if (!selectedDistributor) return;
+      try {
+        const res = await api.get("/delivery/my-beat/summary", {
+          distributorId: selectedDistributor.id,
+        });
+        if (res.success && res.data) {
+          setSummaryData(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch summary", err);
+      }
+    }
+    fetchSummary();
+  }, [selectedDistributor]);
 
   const {
     stores,
-    products,
     completedTransactions,
   } = useBeat();
 
-  const totalStores = stores.length;
-
-  const completedStores = stores.filter(
-    (store) => store.done
-  ).length;
-
-  const pendingStores =
-    totalStores - completedStores;
-
-  const progress =
-    totalStores > 0
-      ? completedStores / totalStores
-      : 0;
-
-  const totalCollected =
-    completedTransactions.reduce(
-      (total, transaction) =>
-        total + transaction.amountCollected,
-      0
-    );
+  const totalStores = summaryData.assigned;
+  const completedStores = summaryData.completed;
+  const pendingStores = summaryData.remaining;
+  const progress = summaryData.completionPercentage / 100;
+  const totalCollected = summaryData.collection;
+  const totalReturned = summaryData.returns;
 
   const cashCollected =
     completedTransactions
@@ -81,39 +97,7 @@ export default function Day() {
         0
       );
 
-  const totalDelivered =
-    completedTransactions.reduce(
-      (total, transaction) => {
-        const delivered =
-          Object.values(
-            transaction.entries
-          ).reduce(
-            (sum, entry) =>
-              sum + entry.delivered,
-            0
-          );
-
-        return total + delivered;
-      },
-      0
-    );
-
-  const totalReturned =
-    completedTransactions.reduce(
-      (total, transaction) => {
-        const returned =
-          Object.values(
-            transaction.entries
-          ).reduce(
-            (sum, entry) =>
-              sum + entry.returned,
-            0
-          );
-
-        return total + returned;
-      },
-      0
-    );
+  const totalDelivered = 0; // Not available in simple summary unless added
 
   const formatAmount = (
     amount: number
@@ -895,6 +879,9 @@ export default function Day() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    maxWidth: 800,
+    width: "100%",
+    alignSelf: "center",
   },
 
   container: {
